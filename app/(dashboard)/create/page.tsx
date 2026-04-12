@@ -99,7 +99,7 @@ const PLATFORM_FORMATS: Record<PlatformId, FormatConfig[]> = {
     { id: "post",     label: "Post",    category: "post",  aspect: "16 / 9", size: "1200×630",  description: "Standard horizontal post",   isVertical: false, icon: "post" },
     { id: "square",   label: "Post",    category: "post",  aspect: "1 / 1",  size: "1080×1080", description: "Square feed post",         isVertical: false, icon: "post" },
     { id: "portrait", label: "Post",    category: "post",  aspect: "4 / 5",  size: "1080×1350", description: "Portrait feed post",       isVertical: false, icon: "post" },
-    { id: "story",    label: "Story",   category: "story", aspect: "9 / 16", size: "1080×1920", description: "24-hour story",            isVertical: true,  icon: "story", maxDurationSec: 20 },
+    // NOTE: Stories are NOT supported for Facebook Pages. Only Instagram Business Accounts can post stories.
     { id: "reel",     label: "Reel",    category: "reel",  aspect: "9 / 16", size: "1080×1920", description: "Short video up to 60s",    isVertical: true,  icon: "reel",  maxDurationSec: 60 },
   ],
   tiktok: [

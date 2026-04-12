@@ -36,22 +36,14 @@ export async function createFacebookPost(params: {
   const { pageId, pageAccessToken, message, mediaUrls = [], format = "post" } = params;
 
   // ── Story ────────────────────────────────────────────────
+  // NOTE: Facebook Pages do NOT support stories. Only Instagram Business Accounts do.
+  // If a user tries to post a story to a Facebook Page, throw an error.
   if (format === "story") {
-    if (mediaUrls.length === 0) {
-      throw new Error("Facebook stories require at least one image or video");
-    }
-    const firstUrl = mediaUrls[0]!;
-    const isVideo = isVideoUrl(firstUrl);
-    const storyData: Record<string, unknown> = isVideo
-      ? { video_url: firstUrl }
-      : { photo_url: firstUrl };
-
-    const res = await graphPost<{ id: string }>(
-      `/${pageId}/stories`,
-      storyData,
-      pageAccessToken
+    throw new Error(
+      "Stories are not supported for Facebook Pages. " +
+      "Stories are only available for Instagram Business Accounts. " +
+      "Please connect your Instagram account to post stories, or switch to posting regular posts instead."
     );
-    return { id: res.id, platform: "facebook" };
   }
 
   // ── Reel ─────────────────────────────────────────────────
@@ -169,26 +161,45 @@ export async function createInstagramPost(params: {
 
   // ── Story ────────────────────────────────────────────────
   if (format === "story") {
+    if (mediaUrls.length === 0) {
+      throw new Error("Instagram stories require at least one image or video");
+    }
+
     const firstUrl = mediaUrls[0]!;
     const isVideo = isVideoUrl(firstUrl);
-    const container = await graphPost<{ id: string }>(
-      `/${igUserId}/media`,
-      {
-        media_type: "STORIES",
-        ...(isVideo ? { video_url: firstUrl } : { image_url: firstUrl }),
-      },
-      accessToken
-    );
 
-    // Wait for container to be ready, then publish
-    await waitForIGContainer(container.id, accessToken);
+    try {
+      const container = await graphPost<{ id: string }>(
+        `/${igUserId}/media`,
+        {
+          media_type: "STORIES",
+          ...(isVideo ? { video_url: firstUrl } : { image_url: firstUrl }),
+        },
+        accessToken
+      );
 
-    const published = await graphPost<{ id: string }>(
-      `/${igUserId}/media_publish`,
-      { creation_id: container.id },
-      accessToken
-    );
-    return { id: published.id, platform: "instagram" };
+      // Wait for container to be ready, then publish
+      await waitForIGContainer(container.id, accessToken);
+
+      const published = await graphPost<{ id: string }>(
+        `/${igUserId}/media_publish`,
+        { creation_id: container.id },
+        accessToken
+      );
+      return { id: published.id, platform: "instagram" };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (errorMsg.includes("does not exist") || errorMsg.includes("permission")) {
+        throw new Error(
+          "Unable to post Instagram stories. This usually means: " +
+          "1) Your Instagram account is not a Business Account (stories require Business Account), " +
+          "2) Your access token has expired or been revoked, or " +
+          "3) Your account doesn't have permission to post stories. " +
+          "Please reconnect your Instagram Business Account and try again."
+        );
+      }
+      throw error;
+    }
   }
 
   // ── Reel ─────────────────────────────────────────────────
