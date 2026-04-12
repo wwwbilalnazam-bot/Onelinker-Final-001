@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { AnimatedSection } from "@/components/ui/animated-section";
 import toast from "react-hot-toast";
