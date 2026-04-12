@@ -605,7 +605,7 @@ export default function LandingPage() {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="text-center max-w-4xl mx-auto space-y-8">
+          <div className="max-w-5xl mx-auto text-center">
             {/* Announcement Badge */}
             <AnimatedSection animation="fade-down" delay={100} className="flex justify-center">
               <Link
@@ -626,8 +626,8 @@ export default function LandingPage() {
 
             {/* Main Headline */}
             <AnimatedSection animation="fade-up" delay={200}>
-              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-medium text-foreground tracking-tight leading-[1.05]">
-                Post Everywhere. <br />
+              <h1 className="text-[2rem] sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-tight mb-6">
+                <span className="text-foreground">Post Everywhere.</span> <br />
                 <span className="bg-gradient-to-r from-primary via-violet-500 to-sky-500 bg-clip-text text-transparent">
                   Automate Everything.
                 </span>
@@ -636,7 +636,7 @@ export default function LandingPage() {
 
             {/* Subheading */}
             <AnimatedSection animation="fade-up" delay={300}>
-              <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-medium">
+              <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4">
                 The all-in-one platform for creators and agencies. Schedule, publish, and track 10+ social channels from one unified dashboard.
               </p>
             </AnimatedSection>
@@ -645,12 +645,12 @@ export default function LandingPage() {
             <AnimatedSection animation="fade-up" delay={400} className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link
                 href="/signup"
-                className="group relative inline-flex items-center gap-2 rounded-full bg-foreground px-10 py-4 text-base font-bold text-background transition-all hover:scale-[1.03] active:scale-[0.97] shadow-xl hover:shadow-primary/25 w-full sm:w-auto overflow-hidden"
+                className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-primary px-10 py-4 text-base font-bold text-white transition-all hover:bg-black active:scale-[0.97] shadow-xl hover:shadow-primary/25 w-full sm:w-auto overflow-hidden text-center"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Start Free Now <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  Get Started for Free <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
               <Link
                 href="/how-it-works"

@@ -16,12 +16,6 @@ const NAV_LINKS = [
   { label: "Pricing", href: "/pricing" },
 ] as const;
 
-const MOBILE_FEATURES = [
-  { label: "Smart Scheduling", icon: Calendar, iconColor: "text-emerald-500", bg: "bg-emerald-500/10", href: "/#features" },
-  { label: "AI Content Lab", icon: Sparkles, iconColor: "text-violet-500", bg: "bg-violet-500/10", href: "/#features" },
-  { label: "Deep Analytics", icon: BarChart3, iconColor: "text-rose-500", bg: "bg-rose-500/10", href: "/#features" },
-  { label: "Multi-Channel", icon: Globe, iconColor: "text-sky-500", bg: "bg-sky-500/10", href: "/#features" },
-];
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -71,95 +65,101 @@ export function Navbar() {
           : "bg-transparent border-transparent py-3 sm:py-5"
       )}
     >
-      <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-10 gap-2 sm:gap-4 font-sans">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-1.5 sm:gap-2.5 z-[110] transition-opacity hover:opacity-80 shrink-0">
-          <Image
-            src="/logo.png"
-            alt="Onelinker"
-            width={32}
-            height={32}
-            className="rounded-md h-8 w-8 sm:h-10 sm:w-10"
-            priority
-          />
-          <span className="hidden sm:inline text-base sm:text-lg font-bold text-foreground tracking-tight">
-            Onelinker
-          </span>
-        </Link>
-
-        {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-1 p-1 bg-muted/30 backdrop-blur-md rounded-full border border-border/40">
-          {NAV_LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={cn(
-                "px-4 py-2 text-sm font-medium rounded-full transition-all relative group",
-                pathname === l.href 
-                  ? "text-primary bg-white shadow-sm" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/50"
-              )}
-            >
-              {l.label}
-              {pathname === l.href && (
-                <motion.div 
-                  layoutId="nav-active"
-                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" 
-                />
-              )}
-            </Link>
-          ))}
-        </div>
-
-        {/* Desktop CTA - Hidden on mobile */}
-        <div className="hidden sm:flex items-center gap-3 relative z-[110] ml-auto">
-          <Link
-            href="/login"
-            className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
-          >
-            Log in
-          </Link>
-          <Link
-            href="/signup"
-            className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-2.5 text-sm font-bold text-background transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-primary/25"
-          >
-            <span className="relative z-10 flex items-center gap-1.5">
-              Get Started <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+      <nav className="max-w-7xl mx-auto flex items-center px-4 sm:px-6 lg:px-10 font-sans">
+        {/* Logo container */}
+        <div className="flex-1 flex items-center">
+          <Link href="/" className="flex items-center gap-1.5 sm:gap-2.5 z-[110] transition-opacity hover:opacity-80 shrink-0">
+            <Image
+              src="/logo.png"
+              alt="Onelinker"
+              width={32}
+              height={32}
+              className="rounded-md h-8 w-8 sm:h-10 sm:w-10"
+              priority
+            />
+            <span className="text-base sm:text-lg font-bold text-foreground tracking-tight">
+              OneLinker
             </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-primary to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
         </div>
 
-        {/* Mobile Hamburger Button */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="relative z-[110] flex sm:hidden h-9 w-9 items-center justify-center rounded-full bg-muted/40 backdrop-blur-md border border-border/40 text-foreground transition-all hover:bg-muted/60 active:scale-90 shrink-0"
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-        >
-          <AnimatePresence mode="wait" initial={false}>
-            {mobileOpen ? (
-              <motion.div
-                key="close"
-                initial={{ opacity: 0, rotate: -90 }}
-                animate={{ opacity: 1, rotate: 0 }}
-                exit={{ opacity: 0, rotate: 90 }}
-                transition={{ duration: 0.2 }}
+        {/* Desktop links - Centered */}
+        <div className="hidden md:flex items-center justify-center flex-1">
+          <div className="flex items-center gap-1 p-1 bg-muted/30 backdrop-blur-md rounded-full border border-border/40">
+            {NAV_LINKS.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-full transition-all relative group",
+                  pathname === l.href 
+                    ? "text-primary bg-white shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-white/50"
+                )}
               >
-                <X className="h-4 w-4" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="menu"
-                initial={{ opacity: 0, rotate: 90 }}
-                animate={{ opacity: 1, rotate: 0 }}
-                exit={{ opacity: 0, rotate: -90 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Menu className="h-4 w-4" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </button>
+                {l.label}
+                {pathname === l.href && (
+                  <motion.div 
+                    layoutId="nav-active"
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" 
+                  />
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop CTA & Mobile Toggle container */}
+        <div className="flex-1 flex items-center justify-end gap-3 sm:gap-4">
+          <div className="hidden sm:flex items-center gap-3 relative z-[110]">
+            <Link
+              href="/login"
+              className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/signup"
+              className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-2.5 text-sm font-bold text-background transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-primary/25"
+            >
+              <span className="relative z-10 flex items-center gap-1.5">
+                Get Started <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
+          </div>
+
+          {/* Mobile Hamburger Button */}
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="relative z-[110] flex md:hidden h-9 w-9 items-center justify-center rounded-full bg-muted/40 backdrop-blur-md border border-border/40 text-foreground transition-all hover:bg-muted/60 active:scale-90 shrink-0"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              {mobileOpen ? (
+                <motion.div
+                  key="close"
+                  initial={{ opacity: 0, rotate: -90 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  exit={{ opacity: 0, rotate: 90 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <X className="h-4 w-4" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="menu"
+                  initial={{ opacity: 0, rotate: 90 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  exit={{ opacity: 0, rotate: -90 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Menu className="h-4 w-4" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </button>
+        </div>
       </nav>
 
       {/* Full-Screen Mobile Menu Overlay */}
@@ -211,31 +211,6 @@ export function Navbar() {
                   </div>
                 </div>
 
-                {/* Features Section - "Not showing all features" fix */}
-                <div className="space-y-4">
-                  <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.2em] px-1">Core Features</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {MOBILE_FEATURES.map((feat, i) => (
-                      <motion.div
-                        key={feat.label}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 + i * 0.05 }}
-                      >
-                        <Link
-                          href={feat.href}
-                          onClick={() => handleNavClick(feat.href)}
-                          className="flex flex-col gap-3 p-4 rounded-2xl bg-card border border-border/10 shadow-sm active:scale-[0.98] transition-all"
-                        >
-                          <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", feat.bg)}>
-                            <feat.icon className={cn("h-5 w-5", feat.iconColor)} />
-                          </div>
-                          <span className="text-xs font-bold text-foreground">{feat.label}</span>
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Resources */}
                 <div className="space-y-4 pt-2">
@@ -389,7 +364,7 @@ export function Footer() {
               <Link href="/" className="flex items-center gap-2.5 mb-4 transition-opacity hover:opacity-80">
                 <Image src="/logo.png" alt="Onelinker" width={36} height={36} className="rounded-lg" />
                 <span className="text-lg font-bold text-foreground tracking-tight">
-                  Onelinker
+                  OneLinker
                 </span>
               </Link>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mb-6">
@@ -453,7 +428,7 @@ export function Footer() {
           {/* Bottom bar */}
           <div className="flex flex-col items-center gap-4 pt-6 border-t border-border/20 sm:flex-row sm:justify-between">
             <p className="text-xs text-muted-foreground/50">
-              &copy; {new Date().getFullYear()} Onelinker. All rights reserved.
+              &copy; {new Date().getFullYear()} OneLinker. All rights reserved.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
               <Link href="/privacy" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors">
