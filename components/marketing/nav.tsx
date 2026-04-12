@@ -102,22 +102,20 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* CTA Buttons - Show on all devices but styled differently */}
-        <div className="flex items-center gap-2 sm:gap-3 relative z-[110] ml-auto sm:ml-0">
+        {/* Desktop CTA - Hidden on mobile */}
+        <div className="hidden sm:flex items-center gap-3 relative z-[110] ml-auto">
           <Link
             href="/login"
-            className="hidden sm:block text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors px-2"
+            className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
           >
             Log in
           </Link>
           <Link
             href="/signup"
-            className="group relative inline-flex items-center justify-center gap-1 sm:gap-2 overflow-hidden rounded-full bg-foreground px-3 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-background transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg sm:shadow-xl hover:shadow-primary/25 shrink-0"
+            className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-foreground px-6 py-2.5 text-sm font-bold text-background transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-primary/25"
           >
-            <span className="relative z-10 flex items-center gap-1 sm:gap-1.5">
-              <span className="hidden sm:inline">Get Started</span>
-              <span className="sm:hidden">Start</span>
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-0.5 sm:group-hover:translate-x-1" />
+            <span className="relative z-10 flex items-center gap-1.5">
+              Get Started <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-primary to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
