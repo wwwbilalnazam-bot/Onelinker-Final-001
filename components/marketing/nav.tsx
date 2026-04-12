@@ -141,7 +141,6 @@ export function Navbar() {
           aria-modal="true"
           aria-label="Navigation menu"
           onClick={(e) => {
-            // Close menu if clicking directly on overlay (not the content)
             if (e.target === e.currentTarget) {
               setMobileOpen(false);
             }
@@ -149,14 +148,34 @@ export function Navbar() {
           className="fixed inset-0 z-[105] md:hidden"
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-md" />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
-          {/* Content Container */}
-          <div className="relative flex flex-col h-screen w-full bg-background overflow-hidden">
-            {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto px-5 pt-4">
-              {/* Navigation Links */}
-              <nav className="space-y-0">
+          {/* Slide-in Panel from Top */}
+          <div className="relative flex flex-col h-screen w-full bg-gradient-to-b from-white to-slate-50 overflow-hidden">
+            {/* Header */}
+            <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">O</span>
+                </div>
+                <span className="font-bold text-slate-900">Onelinker</span>
+              </div>
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-all active:scale-90"
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5 text-slate-600" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Navigation Section */}
+              <nav className="px-4 py-6 space-y-2">
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-3">
+                  Navigation
+                </div>
                 {NAV_LINKS.map((l, i) => (
                   <Link
                     key={l.href}
@@ -164,29 +183,59 @@ export function Navbar() {
                     data-mobile-nav-link=""
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "block min-h-[44px] px-4 py-3 text-lg font-semibold text-foreground",
-                      "rounded-lg transition-all duration-200 outline-none",
-                      "hover:text-primary hover:bg-muted/40",
-                      "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      "flex items-center justify-between px-4 py-3 rounded-lg",
+                      "text-base font-medium text-slate-900",
+                      "hover:bg-slate-100 transition-all duration-150 outline-none",
+                      "focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
                     )}
-                    style={{ transitionDelay: `${i * 50}ms` }}
+                    style={{ transitionDelay: `${i * 30}ms` }}
                   >
-                    {l.label}
+                    <span>{l.label}</span>
+                    <ChevronRight className="h-4 w-4 text-slate-400" />
                   </Link>
                 ))}
               </nav>
+
+              {/* Resources Section */}
+              <div className="px-4 py-4 border-t border-slate-200">
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-3">
+                  Resources
+                </div>
+                <nav className="space-y-2">
+                  {[
+                    { label: "Documentation", href: "#" },
+                    { label: "Support", href: "/contact" },
+                    { label: "Blog", href: "/blog" },
+                  ].map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "flex items-center justify-between px-4 py-3 rounded-lg",
+                        "text-base font-medium text-slate-700",
+                        "hover:bg-slate-100 transition-all duration-150 outline-none",
+                        "focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
+                      )}
+                    >
+                      <span>{l.label}</span>
+                      <ChevronRight className="h-4 w-4 text-slate-400" />
+                    </Link>
+                  ))}
+                </nav>
+              </div>
             </div>
 
             {/* CTA Section - Sticky Footer */}
-            <div className="shrink-0 border-t border-border/10 bg-background px-5 py-3 pb-safe space-y-2">
+            <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-4 pb-safe space-y-3">
               <Link
                 href="/signup"
                 className={cn(
-                  "flex items-center justify-center gap-2 min-h-[44px] rounded-full bg-foreground w-full px-5 py-3",
-                  "text-sm font-bold text-background shadow-lg",
+                  "flex items-center justify-center gap-2 min-h-12 rounded-full bg-slate-900 w-full px-6 py-3",
+                  "text-sm font-semibold text-white shadow-lg",
                   "transition-all duration-200 outline-none",
-                  "hover:shadow-primary/25 hover:scale-[1.02] active:scale-[0.98]",
-                  "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  "hover:bg-slate-800 hover:shadow-xl active:scale-[0.98]",
+                  "focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
                 )}
               >
                 Get Started <ArrowRight className="h-4 w-4" />
@@ -194,11 +243,11 @@ export function Navbar() {
               <Link
                 href="/login"
                 className={cn(
-                  "flex items-center justify-center min-h-[44px] w-full px-4 py-2.5",
-                  "text-sm font-medium text-muted-foreground",
-                  "transition-colors duration-200 outline-none rounded-lg",
-                  "hover:text-foreground hover:bg-muted/40",
-                  "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  "flex items-center justify-center min-h-12 w-full px-6 py-3",
+                  "text-sm font-semibold text-slate-900 border border-slate-200",
+                  "transition-all duration-200 outline-none rounded-full",
+                  "hover:bg-slate-50 hover:border-slate-300",
+                  "focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
                 )}
               >
                 Log in
