@@ -13,7 +13,7 @@ import {
 const NAV_LINKS = [
   { label: "Features", href: "/#features" },
   { label: "How it Works", href: "/how-it-works" },
-  { label: "Log in", href: "/login" },
+  { label: "Pricing", href: "/pricing" },
 ] as const;
 
 
