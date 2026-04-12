@@ -1,14 +1,13 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, ChevronRight, Twitter, Linkedin, Instagram, Youtube,
   Facebook, ArrowUpRight, Mail, ArrowRight, Globe, Sparkles, Shield,
-  ChevronDown, Play
+  ChevronDown, Play, Zap, Calendar, BarChart3, Layers
 } from "lucide-react";
 
 const NAV_LINKS = [
@@ -17,10 +16,18 @@ const NAV_LINKS = [
   { label: "Pricing", href: "/pricing" },
 ] as const;
 
+const MOBILE_FEATURES = [
+  { label: "Smart Scheduling", icon: Calendar, iconColor: "text-emerald-500", bg: "bg-emerald-500/10", href: "/#features" },
+  { label: "AI Content Lab", icon: Sparkles, iconColor: "text-violet-500", bg: "bg-violet-500/10", href: "/#features" },
+  { label: "Deep Analytics", icon: BarChart3, iconColor: "text-rose-500", bg: "bg-rose-500/10", href: "/#features" },
+  { label: "Multi-Channel", icon: Globe, iconColor: "text-sky-500", bg: "bg-sky-500/10", href: "/#features" },
+];
+
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const onScroll = () => {
@@ -33,28 +40,27 @@ export function Navbar() {
   useEffect(() => {
     if (mobileOpen) {
       document.body.style.overflow = "hidden";
-      // Focus trap - focus first menu item when modal opens
-      setTimeout(() => {
-        const firstLink = document.querySelector('[data-mobile-nav-link]') as HTMLAnchorElement;
-        firstLink?.focus();
-      }, 100);
     } else {
       document.body.style.overflow = "unset";
     }
   }, [mobileOpen]);
 
-  useEffect(() => setMobileOpen(false), [pathname]);
-
-  // Handle ESC key to close menu
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && mobileOpen) {
-        setMobileOpen(false);
+    setMobileOpen(false);
+  }, [pathname]);
+
+  const handleNavClick = (href: string) => {
+    setMobileOpen(false);
+    if (href.startsWith("/#") && pathname === "/") {
+      const id = href.split("#")[1];
+      const el = document.getElementById(id);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: "smooth" });
+        }, 300);
       }
-    };
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [mobileOpen]);
+    }
+  };
 
   return (
     <header
@@ -65,7 +71,7 @@ export function Navbar() {
           : "bg-transparent border-transparent py-3 sm:py-5"
       )}
     >
-      <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-10 gap-2 sm:gap-4">
+      <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-10 gap-2 sm:gap-4 font-sans">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-1.5 sm:gap-2.5 z-[110] transition-opacity hover:opacity-80 shrink-0">
           <Image
@@ -96,7 +102,10 @@ export function Navbar() {
             >
               {l.label}
               {pathname === l.href && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                <motion.div 
+                  layoutId="nav-active"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" 
+                />
               )}
             </Link>
           ))}
@@ -121,141 +130,180 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile hamburger - Hidden on md and up since we show CTA buttons */}
+        {/* Mobile Hamburger Button */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="relative z-[110] flex sm:hidden h-9 w-9 items-center justify-center rounded-full bg-muted/40 backdrop-blur-md border border-border/40 text-foreground transition-all hover:bg-muted/60 active:scale-90 shrink-0"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
-          aria-expanded={mobileOpen}
-          aria-controls="mobile-nav-menu"
         >
-          {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          <AnimatePresence mode="wait" initial={false}>
+            {mobileOpen ? (
+              <motion.div
+                key="close"
+                initial={{ opacity: 0, rotate: -90 }}
+                animate={{ opacity: 1, rotate: 0 }}
+                exit={{ opacity: 0, rotate: 90 }}
+                transition={{ duration: 0.2 }}
+              >
+                <X className="h-4 w-4" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="menu"
+                initial={{ opacity: 0, rotate: 90 }}
+                animate={{ opacity: 1, rotate: 0 }}
+                exit={{ opacity: 0, rotate: -90 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Menu className="h-4 w-4" />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </button>
       </nav>
 
-      {/* Mobile menu overlay */}
-      {mobileOpen && (
-        <div
-          id="mobile-nav-menu"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Navigation menu"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setMobileOpen(false);
-            }
-          }}
-          className="fixed inset-0 z-[105] md:hidden"
-        >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      {/* Full-Screen Mobile Menu Overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="fixed inset-0 z-[105] bg-white dark:bg-black md:hidden overflow-hidden flex flex-col h-[100dvh]"
+          >
+            {/* Immersive Background Elements */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-50">
+              <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[100px]" />
+              <div className="absolute bottom-0 right-[-10%] w-[40%] h-[40%] bg-violet-500/10 rounded-full blur-[80px]" />
+            </div>
 
-          {/* Slide-in Panel from Top */}
-          <div className="relative flex flex-col h-screen w-full bg-gradient-to-b from-white to-slate-50 overflow-hidden">
-            {/* Header */}
-            <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">O</span>
-                </div>
-                <span className="font-bold text-slate-900">Onelinker</span>
-              </div>
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-all active:scale-90"
-                aria-label="Close menu"
-              >
-                <X className="h-5 w-5 text-slate-600" />
-              </button>
+            {/* Header / Top Bar Area (Visual only, button is in main nav) */}
+            <div className="h-[60px] sm:h-[80px] w-full shrink-0 border-b border-border/10 flex items-center px-4 sm:px-6 invisible">
+              {/* Spacer for original header */}
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto">
-              {/* Navigation Section */}
-              <nav className="px-4 py-6 space-y-2">
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-3">
-                  Navigation
+            <div className="flex-1 overflow-y-auto px-6 py-8 relative">
+              <div className="max-w-md mx-auto space-y-10">
+                
+                {/* Main Navigation */}
+                <div className="space-y-4">
+                  <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.2em] px-1">Navigation</p>
+                  <div className="grid gap-2">
+                    {NAV_LINKS.map((link, i) => (
+                      <motion.div
+                        key={link.href}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 + i * 0.05 }}
+                      >
+                        <Link
+                          href={link.href}
+                          onClick={() => handleNavClick(link.href)}
+                          className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 hover:bg-muted/50 border border-border/20 transition-all active:scale-[0.98] group"
+                        >
+                          <span className="text-lg font-bold text-foreground">{link.label}</span>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-                {NAV_LINKS.map((l, i) => (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    data-mobile-nav-link=""
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "flex items-center justify-between px-4 py-3 rounded-lg",
-                      "text-base font-medium text-slate-900",
-                      "hover:bg-slate-100 transition-all duration-150 outline-none",
-                      "focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
-                    )}
-                    style={{ transitionDelay: `${i * 30}ms` }}
-                  >
-                    <span>{l.label}</span>
-                    <ChevronRight className="h-4 w-4 text-slate-400" />
-                  </Link>
-                ))}
-              </nav>
 
-              {/* Resources Section */}
-              <div className="px-4 py-4 border-t border-slate-200">
-                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-3">
-                  Resources
+                {/* Features Section - "Not showing all features" fix */}
+                <div className="space-y-4">
+                  <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.2em] px-1">Core Features</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {MOBILE_FEATURES.map((feat, i) => (
+                      <motion.div
+                        key={feat.label}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 + i * 0.05 }}
+                      >
+                        <Link
+                          href={feat.href}
+                          onClick={() => handleNavClick(feat.href)}
+                          className="flex flex-col gap-3 p-4 rounded-2xl bg-card border border-border/10 shadow-sm active:scale-[0.98] transition-all"
+                        >
+                          <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", feat.bg)}>
+                            <feat.icon className={cn("h-5 w-5", feat.iconColor)} />
+                          </div>
+                          <span className="text-xs font-bold text-foreground">{feat.label}</span>
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-                <nav className="space-y-2">
-                  {[
-                    { label: "Documentation", href: "#" },
-                    { label: "Support", href: "/contact" },
-                    { label: "Blog", href: "/blog" },
-                  ].map((l) => (
-                    <Link
-                      key={l.href}
-                      href={l.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={cn(
-                        "flex items-center justify-between px-4 py-3 rounded-lg",
-                        "text-base font-medium text-slate-700",
-                        "hover:bg-slate-100 transition-all duration-150 outline-none",
-                        "focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
-                      )}
-                    >
-                      <span>{l.label}</span>
-                      <ChevronRight className="h-4 w-4 text-slate-400" />
-                    </Link>
-                  ))}
-                </nav>
+
+                {/* Resources */}
+                <div className="space-y-4 pt-2">
+                  <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.2em] px-1">Resources</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { label: "Documentation", href: "#" },
+                      { label: "Support", href: "/contact" },
+                      { label: "Community Blog", href: "/blog" },
+                    ].map((res, i) => (
+                      <motion.div
+                        key={res.label}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 + i * 0.05 }}
+                      >
+                        <Link
+                          href={res.href}
+                          onClick={() => setMobileOpen(false)}
+                          className="flex items-center gap-3 px-1 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <ArrowUpRight className="h-4 w-4" />
+                          {res.label}
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* CTA Section - Sticky Footer */}
-            <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-4 pb-safe space-y-3">
-              <Link
-                href="/signup"
-                className={cn(
-                  "flex items-center justify-center gap-2 min-h-12 rounded-full bg-slate-900 w-full px-6 py-3",
-                  "text-sm font-semibold text-white shadow-lg",
-                  "transition-all duration-200 outline-none",
-                  "hover:bg-slate-800 hover:shadow-xl active:scale-[0.98]",
-                  "focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
-                )}
-              >
-                Get Started <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/login"
-                className={cn(
-                  "flex items-center justify-center min-h-12 w-full px-6 py-3",
-                  "text-sm font-semibold text-slate-900 border border-slate-200",
-                  "transition-all duration-200 outline-none rounded-full",
-                  "hover:bg-slate-50 hover:border-slate-300",
-                  "focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
-                )}
-              >
-                Log in
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+            {/* Sticky/Fixed Footer CTA */}
+            <motion.div 
+              initial={{ y: 100 }}
+              animate={{ y: 0 }}
+              exit={{ y: 100 }}
+              transition={{ duration: 0.4, type: "spring", damping: 25 }}
+              className="mt-auto p-6 sm:p-8 bg-gradient-to-t from-white via-white/95 to-transparent dark:from-black dark:via-black/95 shrink-0"
+            >
+              <div className="max-w-md mx-auto space-y-3">
+                <Link
+                  href="/#waitlist"
+                  onClick={() => handleNavClick("/#waitlist")}
+                  className="flex items-center justify-center gap-2 h-14 w-full rounded-2xl bg-foreground text-background text-base font-black shadow-xl shadow-foreground/10 active:scale-[0.97] transition-all"
+                >
+                  Get Started for Free <ArrowRight className="h-5 w-5" />
+                </Link>
+                <div className="grid grid-cols-2 gap-3">
+                   <Link
+                    href="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-center h-12 w-full rounded-xl bg-muted/40 text-foreground text-sm font-bold border border-border/10 active:scale-[0.97] transition-all"
+                  >
+                    Member Log in
+                  </Link>
+                   <Link
+                    href="/pricing"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-center h-12 w-full rounded-xl bg-muted/40 text-foreground text-sm font-bold border border-border/10 active:scale-[0.97] transition-all"
+                  >
+                    View Pricing
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

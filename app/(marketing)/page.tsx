@@ -648,7 +648,7 @@ export default function LandingPage() {
                 className="group relative inline-flex items-center gap-2 rounded-full bg-foreground px-10 py-4 text-base font-bold text-background transition-all hover:scale-[1.03] active:scale-[0.97] shadow-xl hover:shadow-primary/25 w-full sm:w-auto overflow-hidden"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Get Started for Free <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  Start Free Now <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-primary to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>
@@ -901,7 +901,7 @@ export default function LandingPage() {
       </section>
 
       {/* ════════ HOW IT WORKS ════════ */}
-      <section className="relative py-24 sm:py-32 bg-muted/10 border-y border-border/30">
+      <section id="how-it-works" className="relative py-24 sm:py-32 bg-muted/10 border-y border-border/30">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           <AnimatedSection animation="fade-up">
             <div className="text-center mb-16 space-y-4">
@@ -960,7 +960,7 @@ export default function LandingPage() {
       </section>
 
       {/* ════════ FAQ SECTION ════════ */}
-      <section className="relative py-24 sm:py-32 bg-background border-t border-border/30">
+      <section id="faq" className="relative py-24 sm:py-32 bg-background border-t border-border/30">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16 space-y-4">
             <h2 className="text-4xl font-medium text-foreground">Common Questions</h2>
@@ -975,7 +975,7 @@ export default function LandingPage() {
       </section>
 
       {/* ════════ FINAL CTA ════════ */}
-      <section className="relative pt-32 pb-48">
+      <section id="waitlist" className="relative pt-32 pb-48">
         <div className="max-w-7xl mx-auto px-6">
           <AnimatedSection animation="scale" className="relative p-10 sm:p-20 rounded-[3rem] bg-foreground overflow-hidden shadow-2xl">
             {/* Background Texture */}
