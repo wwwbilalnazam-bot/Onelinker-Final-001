@@ -14,5 +14,21 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AuthLayoutClient>{children}</AuthLayoutClient>;
+  return (
+    <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              const html = document.documentElement;
+              html.classList.remove('dark');
+              html.classList.add('light');
+              html.style.colorScheme = 'light';
+            })();
+          `,
+        }}
+      />
+      <AuthLayoutClient>{children}</AuthLayoutClient>
+    </>
+  );
 }

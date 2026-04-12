@@ -12,5 +12,21 @@ export default function MarketingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <MarketingLayoutClient>{children}</MarketingLayoutClient>;
+  return (
+    <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              const html = document.documentElement;
+              html.classList.remove('dark');
+              html.classList.add('light');
+              html.style.colorScheme = 'light';
+            })();
+          `,
+        }}
+      />
+      <MarketingLayoutClient>{children}</MarketingLayoutClient>
+    </>
+  );
 }

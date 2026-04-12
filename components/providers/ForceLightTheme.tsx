@@ -12,13 +12,23 @@ export function ForceLightTheme() {
   const previousTheme = useRef<string | undefined>();
 
   useEffect(() => {
-    if (theme !== "light") {
-      previousTheme.current = theme;
+    // Get current theme from html element
+    const htmlElement = document.documentElement;
+    const currentTheme = htmlElement.classList.contains("dark") ? "dark" : "light";
+
+    if (currentTheme !== "light") {
+      previousTheme.current = currentTheme;
+      // Remove dark class and ensure light is set
+      htmlElement.classList.remove("dark");
+      htmlElement.classList.add("light");
       setTheme("light");
     }
+
     return () => {
-      if (previousTheme.current) {
-        setTheme(previousTheme.current);
+      if (previousTheme.current === "dark") {
+        htmlElement.classList.add("dark");
+        htmlElement.classList.remove("light");
+        setTheme("dark");
       }
     };
     // Only run on mount/unmount
