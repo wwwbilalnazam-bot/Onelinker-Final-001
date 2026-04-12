@@ -41,13 +41,34 @@ export async function publishPhotoStory(
     console.log(`[facebook-story] Photo story published: ${res.id}`);
     return { id: res.id, platform: "facebook" };
   } catch (err: any) {
-    const msg = err?.error?.message || err?.message || String(err);
-    if (msg.includes("permission")) {
+    const errorCode = err?.error?.code;
+    const errorMsg = err?.error?.message || err?.message || String(err);
+    const errorType = err?.error?.type || "unknown";
+
+    console.error(`[facebook-story] Error code: ${errorCode}, type: ${errorType}, msg: ${errorMsg}`);
+
+    // Map specific error codes to user-friendly messages
+    if (errorCode === 200 || errorMsg.includes("permission")) {
       throw new Error(
         "Permission denied. Ensure the page has `pages_manage_posts` scope and is active."
       );
     }
-    throw new Error(`Failed to publish photo story: ${msg}`);
+    if (errorCode === 100 || errorMsg.includes("invalid") || errorMsg.includes("Invalid")) {
+      throw new Error(
+        "Invalid image URL or format. Ensure the image is accessible (HTTPS), JPG/PNG format, and under 8MB."
+      );
+    }
+    if (errorCode === 1 || errorMsg.includes("API")) {
+      throw new Error(
+        "Meta API error. This may be temporary. Please try again in a few seconds."
+      );
+    }
+    if (errorMsg === "Unknown" || errorMsg === "An unknown error has occurred") {
+      throw new Error(
+        "Unknown error from Meta. Please check: 1) Image URL is accessible, 2) Image is JPG/PNG, 3) Page is still connected."
+      );
+    }
+    throw new Error(`Failed to publish photo story: ${errorMsg}`);
   }
 }
 
@@ -113,26 +134,41 @@ export async function publishVideoStory(
       console.log(`[facebook-story] Video story published: ${finishRes.id}`);
       return { id: finishRes.id, platform: "facebook" };
     } catch (err: any) {
-      const msg = err?.error?.message || err?.message || String(err);
-      const code = err?.error?.code;
+      const errorCode = err?.error?.code;
+      const errorMsg = err?.error?.message || err?.message || String(err);
+      const errorType = err?.error?.type || "unknown";
       const isRetryable =
-        code === 2 || msg.includes("timeout") || msg.includes("temporary");
+        errorCode === 2 || errorMsg.includes("timeout") || errorMsg.includes("temporary");
+
+      console.error(
+        `[facebook-story] Attempt ${attempt + 1}/${maxRetries}: code=${errorCode}, type=${errorType}, msg=${errorMsg}`
+      );
 
       if (isRetryable && attempt < maxRetries - 1) {
         const delay = Math.pow(2, attempt) * 1000; // exponential backoff
         console.warn(
-          `[facebook-story] Retrying in ${delay}ms due to: ${msg}`
+          `[facebook-story] Retrying in ${delay}ms due to: ${errorMsg}`
         );
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
 
-      if (msg.includes("permission") || code === 200) {
+      if (errorMsg.includes("permission") || errorCode === 200) {
         throw new Error(
           "Permission denied. Ensure scope `pages_manage_posts` is granted."
         );
       }
-      throw new Error(`Failed to publish video story: ${msg}`);
+      if (errorCode === 100 || errorMsg.includes("invalid") || errorMsg.includes("Invalid")) {
+        throw new Error(
+          "Invalid video URL or format. Ensure the video is accessible (HTTPS), MP4 format, under 4GB, and 60s max."
+        );
+      }
+      if (errorMsg === "Unknown" || errorMsg === "An unknown error has occurred") {
+        throw new Error(
+          "Unknown error from Meta. Please check: 1) Video URL is accessible, 2) Video is MP4 format, 3) Video is under 60 seconds, 4) Page is connected."
+        );
+      }
+      throw new Error(`Failed to publish video story: ${errorMsg}`);
     }
   }
 
