@@ -89,7 +89,7 @@ export async function fetchInstagramMediaComments(params: {
   const { igMediaId, pageAccessToken, since } = params;
 
   const apiParams: Record<string, string | number> = {
-    fields: "id,username,text,timestamp",
+    fields: "id,from.fields(id,username,name),text,timestamp,like_count",
     limit: 50,
   };
 
@@ -102,17 +102,18 @@ export async function fetchInstagramMediaComments(params: {
     const response = await graphGet<{
       data: Array<{
         id: string;
-        username: string;
+        from?: { id: string; username: string; name: string };
         text: string;
         timestamp: string;
+        like_count?: number;
       }>;
       paging?: { cursors: { before?: string; after?: string } };
     }>(`/${igMediaId}/comments`, apiParams, pageAccessToken);
 
     return (response.data || []).map((comment) => ({
       externalId: comment.id,
-      authorName: comment.username || "Unknown",
-      authorAvatar: null, // Instagram Graph API doesn't provide avatar in /comments endpoint
+      authorName: comment.from?.username || comment.from?.name || "Unknown",
+      authorAvatar: null, // Instagram Graph API doesn't provide avatar URL in /comments endpoint
       content: comment.text || "",
       receivedAt: comment.timestamp,
     }));
