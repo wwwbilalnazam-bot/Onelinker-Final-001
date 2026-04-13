@@ -220,8 +220,10 @@ export async function createInstagramPost(params: {
     const container = await graphPost<{ id: string }>(
       `/${igUserId}/media`,
       {
+        media_type: "IMAGE",
         image_url: mediaUrls[0]!,
         caption,
+        upload_phase: "FINISH",
       },
       accessToken
     );
@@ -267,6 +269,7 @@ export async function createInstagramPost(params: {
         media_type: isVideo ? "VIDEO" : "IMAGE",
         ...(isVideo ? { video_url: url } : { image_url: url }),
         is_carousel_item: true,
+        upload_phase: isVideo ? "UPLOAD" : "FINISH",
       },
       accessToken
     );
@@ -284,6 +287,7 @@ export async function createInstagramPost(params: {
       media_type: "CAROUSEL",
       children: childIds.join(","),
       caption,
+      upload_phase: "FINISH",
     },
     accessToken
   );
