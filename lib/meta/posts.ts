@@ -101,10 +101,18 @@ export async function createFacebookPost(params: {
       }
 
       // Parse upload response to get video_id
-      const uploadBody = await uploadRes.json() as { video_id?: string };
-      const videoId = uploadBody.video_id;
+      let uploadBody: { video_id?: string } = {};
+      try {
+        uploadBody = await uploadRes.json();
+      } catch (parseErr) {
+        console.error(`[facebook-reel] Failed to parse upload response:`, await uploadRes.text());
+        throw new Error("Upload response was not valid JSON");
+      }
+
+      const videoId = uploadBody?.video_id;
       if (!videoId) {
-        throw new Error("Reel upload did not return video_id");
+        console.error(`[facebook-reel] Upload response missing video_id:`, uploadBody);
+        throw new Error("Reel upload did not return video_id - check page permissions");
       }
 
       // Step 3: Finish
@@ -122,7 +130,18 @@ export async function createFacebookPost(params: {
       
       return { id: finishRes.id, platform: "facebook" };
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : typeof err === 'string' ? err : String(err ?? 'Unknown error');
+      let errorMsg = 'Unknown error';
+      try {
+        if (err instanceof Error) {
+          errorMsg = err.message;
+        } else if (typeof err === 'string') {
+          errorMsg = err;
+        } else if (err && typeof err === 'object') {
+          errorMsg = JSON.stringify(err);
+        }
+      } catch {
+        errorMsg = 'Error formatting error message';
+      }
       console.error(`[facebook-reel] Publish failed:`, err);
       throw new Error(`Failed to publish Facebook Reel: ${errorMsg}`);
     }
@@ -194,10 +213,18 @@ export async function createFacebookPost(params: {
       }
 
       // Parse upload response to get video_id
-      const uploadBody = await uploadRes.json() as { video_id?: string };
-      const videoId = uploadBody.video_id;
+      let uploadBody: { video_id?: string } = {};
+      try {
+        uploadBody = await uploadRes.json();
+      } catch (parseErr) {
+        console.error(`[facebook-video] Failed to parse upload response:`, await uploadRes.text());
+        throw new Error("Upload response was not valid JSON");
+      }
+
+      const videoId = uploadBody?.video_id;
       if (!videoId) {
-        throw new Error("Video upload did not return video_id");
+        console.error(`[facebook-video] Upload response missing video_id:`, uploadBody);
+        throw new Error("Video upload did not return video_id - check page permissions");
       }
 
       // Step 3: Finish
@@ -222,7 +249,18 @@ export async function createFacebookPost(params: {
       
       return { id: finishRes.id, platform: "facebook" };
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : typeof err === 'string' ? err : String(err ?? 'Unknown error');
+      let errorMsg = 'Unknown error';
+      try {
+        if (err instanceof Error) {
+          errorMsg = err.message;
+        } else if (typeof err === 'string') {
+          errorMsg = err;
+        } else if (err && typeof err === 'object') {
+          errorMsg = JSON.stringify(err);
+        }
+      } catch {
+        errorMsg = 'Error formatting error message';
+      }
       console.error(`[facebook-video] Publish failed:`, err);
       throw new Error(`Failed to publish Facebook video: ${errorMsg}`);
     }
