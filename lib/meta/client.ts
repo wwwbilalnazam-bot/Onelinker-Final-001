@@ -28,13 +28,13 @@ export class MetaApiError extends Error {
 // ── Environment helpers ─────────────────────────────────────
 
 export function getMetaAppId(): string {
-  const id = process.env.META_APP_ID;
+  const id = process.env.META_APP_ID?.trim();
   if (!id) throw new MetaApiError("META_APP_ID is not configured", 500);
   return id;
 }
 
 export function getMetaAppSecret(): string {
-  const secret = process.env.META_APP_SECRET;
+  const secret = process.env.META_APP_SECRET?.trim();
   if (!secret) throw new MetaApiError("META_APP_SECRET is not configured", 500);
   return secret;
 }
