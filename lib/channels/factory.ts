@@ -6,9 +6,9 @@
 import { Platform } from "@/types";
 import { IChannelAdapter } from "./types";
 import { FacebookAdapter } from "./FacebookAdapter";
-// import { InstagramAdapter } from "./InstagramAdapter";
+import { InstagramAdapter } from "./InstagramAdapter";
+import { YouTubeAdapter } from "./YouTubeAdapter";
 // import { TwitterAdapter } from "./TwitterAdapter";
-// import { YouTubeAdapter } from "./YouTubeAdapter";
 
 /**
  * Get adapter instance for a given platform
@@ -34,16 +34,16 @@ export class ChannelAdapterFactory {
         adapter = new FacebookAdapter();
         break;
 
-      // case Platform.Instagram:
-      //   adapter = new InstagramAdapter();
-      //   break;
+      case Platform.Instagram:
+        adapter = new InstagramAdapter();
+        break;
+
+      case Platform.YouTube:
+        adapter = new YouTubeAdapter();
+        break;
 
       // case Platform.Twitter:
       //   adapter = new TwitterAdapter();
-      //   break;
-
-      // case Platform.YouTube:
-      //   adapter = new YouTubeAdapter();
       //   break;
 
       default:
@@ -69,11 +69,9 @@ export class ChannelAdapterFactory {
    * Get all supported platforms
    */
   static getSupportedPlatforms(): Platform[] {
-    return [Platform.Facebook];
+    return [Platform.Facebook, Platform.Instagram, Platform.YouTube];
     // Add more as they're implemented:
-    // Platform.Instagram,
     // Platform.Twitter,
-    // Platform.YouTube,
   }
 
   /**

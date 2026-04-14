@@ -99,34 +99,22 @@ export async function POST(request: NextRequest) {
       // Process each platform in the post
       for (const platform of post.platforms) {
         try {
-          const rawAccountId = post.account_ids[0]; // First account ID for this platform
-          if (!rawAccountId) continue;
+          // Find the account ID for this platform from the post's account list
+          // Note: account_ids are social_accounts.id (UUIDs)
+          const { data: platformAccount } = await serviceClient
+            .from("social_accounts")
+            .select("id, outstand_account_id")
+            .in("id", post.account_ids)
+            .eq("platform", platform)
+            .limit(1)
+            .maybeSingle();
 
-          // Resolve account ID to outstand_account_id format if needed
-          // Account IDs might be usernames or outstand_account_ids
-          let resolvedAccountId = rawAccountId;
-          if (!rawAccountId.startsWith("meta_fb_") && !rawAccountId.startsWith("meta_ig_") && !rawAccountId.startsWith("yt_")) {
-            // It's likely a username — look up the outstand_account_id
-            // Determine the platform prefix to search for
-            const prefix = platform === "youtube" ? "yt_" : `meta_${platform === "facebook" ? "fb" : "ig"}_`;
-
-            const { data: found } = await serviceClient
-              .from("social_accounts")
-              .select("outstand_account_id")
-              .eq("workspace_id", workspaceId)
-              .eq("username", rawAccountId)
-              .like("outstand_account_id", `${prefix}%`)
-              .eq("is_active", true)
-              .limit(1)
-              .maybeSingle();
-
-            if (!found) {
-              console.warn(`[sync] Could not resolve account ${rawAccountId} for post ${post.id}`);
-              continue;
-            }
-            resolvedAccountId = found.outstand_account_id;
+          if (!platformAccount) {
+            console.warn(`[sync] No account found for platform ${platform} in post ${post.id}`);
+            continue;
           }
 
+          const resolvedAccountId = platformAccount.outstand_account_id;
           console.log(`[sync] Fetching ${platform} comments for post ${post.id} with account ${resolvedAccountId}`);
 
           if (platform === "facebook") {
@@ -138,7 +126,8 @@ export async function POST(request: NextRequest) {
               continue;
             }
 
-            const fbPostId = post.outstand_post_id?.replace("meta_", "") || "";
+            const fbIndex = post.platforms.indexOf("facebook");
+            const fbPostId = post.outstand_post_id?.replace("meta_", "").split(",")[fbIndex] || post.outstand_post_id?.replace("meta_", "").split(",")[0] || "";
             if (!fbPostId) {
               console.warn(`[sync] No Facebook post ID for post ${post.id}`);
               continue;
@@ -178,7 +167,8 @@ export async function POST(request: NextRequest) {
               continue;
             }
 
-            const igMediaId = post.outstand_post_id?.replace("meta_", "") || "";
+            const igIndex = post.platforms.indexOf("instagram");
+            const igMediaId = post.outstand_post_id?.replace("meta_", "").split(",")[igIndex] || post.outstand_post_id?.replace("meta_", "").split(",")[0] || "";
             if (!igMediaId) {
               console.warn(`[sync] No Instagram media ID for post ${post.id}`);
               continue;

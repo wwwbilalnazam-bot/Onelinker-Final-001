@@ -32,12 +32,12 @@ export async function fetchFacebookPostComments(params: {
 }): Promise<FetchedComment[]> {
   const { postId, pageAccessToken, since } = params;
 
+  // Use the full PAGEID_POSTID if possible, though PostID alone often works
   const apiParams: Record<string, string | number> = {
-    fields: "id,from,message,created_time",
+    fields: "id,from{id,name,picture},message,created_time",
     limit: 50,
   };
 
-  // Convert ISO timestamp to Unix timestamp if provided
   if (since) {
     const unixTs = Math.floor(new Date(since).getTime() / 1000);
     apiParams.since = unixTs;
@@ -47,7 +47,7 @@ export async function fetchFacebookPostComments(params: {
     const response = await graphGet<{
       data: Array<{
         id: string;
-        from: { id: string; name: string };
+        from?: { id: string; name: string; picture?: { data: { url: string } } };
         message: string;
         created_time: string;
       }>;
@@ -56,14 +56,18 @@ export async function fetchFacebookPostComments(params: {
 
     return (response.data || []).map((comment) => ({
       externalId: comment.id,
-      authorName: comment.from.name || "Unknown",
-      authorAvatar: null, // Facebook Graph API doesn't provide avatar in /comments endpoint
+      authorName: comment.from?.name || "Facebook User",
+      authorAvatar: comment.from?.picture?.data?.url || null,
       content: comment.message || "",
       receivedAt: comment.created_time,
     }));
   } catch (error) {
     if (error instanceof MetaApiError) {
-      console.error(`[facebook] Error fetching comments for post ${postId}:`, error.message);
+      console.error(`[facebook] Error fetching comments for post ${postId}:`, {
+        message: error.message,
+        code: error.code,
+        subcode: error.subcode
+      });
     } else {
       console.error(`[facebook] Unexpected error fetching comments:`, error);
     }
@@ -88,8 +92,10 @@ export async function fetchInstagramMediaComments(params: {
 }): Promise<FetchedComment[]> {
   const { igMediaId, pageAccessToken, since } = params;
 
+  // Note: 'from' on IG comments requires the 'instagram_manage_comments' permission
+  // and for some apps, advanced access.
   const apiParams: Record<string, string | number> = {
-    fields: "id,from.fields(id,username,name),text,timestamp,like_count",
+    fields: "id,from{id,username},text,timestamp",
     limit: 50,
   };
 
@@ -102,24 +108,27 @@ export async function fetchInstagramMediaComments(params: {
     const response = await graphGet<{
       data: Array<{
         id: string;
-        from?: { id: string; username: string; name: string };
+        from?: { id: string; username: string };
         text: string;
         timestamp: string;
-        like_count?: number;
       }>;
       paging?: { cursors: { before?: string; after?: string } };
     }>(`/${igMediaId}/comments`, apiParams, pageAccessToken);
 
     return (response.data || []).map((comment) => ({
       externalId: comment.id,
-      authorName: comment.from?.username || comment.from?.name || "Unknown",
-      authorAvatar: null, // Instagram Graph API doesn't provide avatar URL in /comments endpoint
+      authorName: comment.from?.username || "Instagram User",
+      authorAvatar: null, // IG API doesn't easily provide avatars for comment authors without extra scopes
       content: comment.text || "",
       receivedAt: comment.timestamp,
     }));
   } catch (error) {
     if (error instanceof MetaApiError) {
-      console.error(`[instagram] Error fetching comments for media ${igMediaId}:`, error.message);
+      console.error(`[instagram] Error fetching comments for media ${igMediaId}:`, {
+        message: error.message,
+        code: error.code,
+        subcode: error.subcode
+      });
     } else {
       console.error(`[instagram] Unexpected error fetching comments:`, error);
     }

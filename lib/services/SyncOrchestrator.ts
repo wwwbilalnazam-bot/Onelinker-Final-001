@@ -222,21 +222,30 @@ export class SyncOrchestrator {
     let errorCount = 0;
 
     try {
-      // Get posts for this account to fetch comments for
+      // Get posts for this specific account to fetch comments for
+      // accountId is the outstand_account_id (e.g., "meta_ig_..."), we need the local UUID first
+      const { data: localAccount } = await this.supabase
+        .from('social_accounts')
+        .select('id')
+        .eq('workspace_id', workspaceId)
+        .eq('outstand_account_id', accountId)
+        .single();
+
       const { data: posts, error: postsError } = await this.supabase
         .from('posts')
         .select('id, outstand_post_id, platforms, account_ids, published_at')
         .eq('workspace_id', workspaceId)
         .eq('status', 'published')
         .contains('platforms', [platform])
+        .contains('account_ids', [localAccount?.id || ""])
         .order('published_at', { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (postsError) {
         throw new Error(`Failed to fetch posts: ${postsError.message}`);
       }
 
-      console.log(`[SyncOrchestrator] Found ${posts?.length || 0} published posts for ${platform}`);
+      console.log(`[SyncOrchestrator] Account ${accountId}: Found ${posts?.length || 0} published posts to sync`);
 
       const inboxMessages: any[] = [];
 
@@ -247,8 +256,15 @@ export class SyncOrchestrator {
         }
 
         // Extract platform-specific post ID (handle 'meta_' prefix and comma-separated IDs)
-        const parsedId = post.outstand_post_id.replace(/^meta_/, '').split(',')[0];
-        const postId = parsedId;
+        // Find index of current platform in post.platforms to get the matching ID
+        const platformIndex = post.platforms.indexOf(platform);
+        if (platformIndex === -1) {
+          skippedCount++;
+          continue;
+        }
+
+        const ids = post.outstand_post_id.replace(/^meta_/, '').split(',');
+        const postId = ids[platformIndex] || ids[0]; // fallback to first if index out of bounds
 
         try {
           // Fetch comments
@@ -261,19 +277,6 @@ export class SyncOrchestrator {
 
           // Map to inbox_messages format
           for (const comment of comments) {
-            // Check for duplicate
-            const { data: existing } = await this.supabase
-              .from('inbox_messages')
-              .select('id')
-              .eq('workspace_id', workspaceId)
-              .eq('external_message_id', comment.externalId)
-              .maybeSingle();
-
-            if (existing) {
-              skippedCount++;
-              continue;
-            }
-
             inboxMessages.push({
               workspace_id: workspaceId,
               platform,

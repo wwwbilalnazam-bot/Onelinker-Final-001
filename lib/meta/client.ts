@@ -117,6 +117,69 @@ export async function graphPost<T>(
   return res.json() as Promise<T>;
 }
 
+export async function graphPostMultipart<T>(
+  path: string,
+  formData: FormData,
+  accessToken?: string
+): Promise<T> {
+  const url = new URL(`${GRAPH_API_BASE}${path}`);
+
+  if (accessToken) {
+    url.searchParams.set("access_token", accessToken);
+  }
+
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    body: formData,
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errBody = (await res.json().catch(() => ({}))) as GraphErrorBody;
+    const err = errBody.error;
+    throw new MetaApiError(
+      err?.message ?? `Graph API multipart error: ${res.status}`,
+      res.status,
+      err?.code,
+      err?.error_subcode,
+      err?.fbtrace_id
+    );
+  }
+
+  return res.json() as Promise<T>;
+}
+
+export async function graphPut<T>(
+  path: string,
+  body: BodyInit,
+  contentType: string,
+  accessToken?: string
+): Promise<T> {
+  const url = new URL(`${GRAPH_API_BASE}${path}`);
+  if (accessToken) url.searchParams.set("access_token", accessToken);
+
+  const res = await fetch(url.toString(), {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body,
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const errBody = (await res.json().catch(() => ({}))) as GraphErrorBody;
+    const err = errBody.error;
+    throw new MetaApiError(
+      err?.message ?? `Graph API PUT error: ${res.status}`,
+      res.status,
+      err?.code,
+      err?.error_subcode,
+      err?.fbtrace_id
+    );
+  }
+
+  return res.json() as Promise<T>;
+}
+
 export async function graphDelete(
   path: string,
   accessToken: string

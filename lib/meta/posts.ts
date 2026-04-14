@@ -74,17 +74,20 @@ export async function createFacebookPost(params: {
       console.log(`[facebook-reel] Starting resumable upload for reel`);
       
       // Step 1: Start
-      const startRes = await graphPost<{ upload_session_id: string; upload_url: string }>(
+      const startRes = await graphPost<any>(
         `/${pageId}/video_reels`,
         { upload_phase: "start" },
         pageAccessToken
       );
       
+      const sessionId = startRes.upload_session_id || startRes.video_id;
+      const step1VideoId = startRes.video_id;
+      
       // Step 2: Upload
-      console.log(`[facebook-reel] Uploading video binary`);
+      console.log(`[facebook-reel] Uploading video binary to session: ${sessionId}`);
       const videoBlob = await fetch(videoUrl).then(r => r.blob());
       const uploadRes = await fetch(startRes.upload_url, {
-        method: "POST", // Meta Reels upload often prefers POST for binary
+        method: "POST",
         body: videoBlob,
         headers: {
           "Authorization": `OAuth ${pageAccessToken}`,
@@ -96,54 +99,52 @@ export async function createFacebookPost(params: {
 
       if (!uploadRes.ok) {
         const errText = await uploadRes.text();
-        console.error(`[facebook-reel] Upload failed with status ${uploadRes.status}:`, errText);
-        throw new Error(`Reel binary upload failed: ${uploadRes.status} ${errText}`);
+        console.error(`[facebook-reel] Binary upload failed:`, { status: uploadRes.status, text: errText });
+        throw new Error(`Reel video upload failed (${uploadRes.status}): ${errText}`);
       }
 
-      // Parse upload response to get video_id
-      let uploadBody: { video_id?: string } = {};
+      // Step 2 response might contain video_id as well
+      const rawResponse = await uploadRes.text();
+      let step2VideoId = "";
       try {
-        uploadBody = await uploadRes.json();
-      } catch (parseErr) {
-        console.error(`[facebook-reel] Failed to parse upload response:`, await uploadRes.text());
-        throw new Error("Upload response was not valid JSON");
+        const json = JSON.parse(rawResponse);
+        step2VideoId = json.video_id;
+      } catch (err) {
+        if (rawResponse.match(/^\d+$/)) step2VideoId = rawResponse.trim();
       }
 
-      const videoId = uploadBody?.video_id;
-      if (!videoId) {
-        console.error(`[facebook-reel] Upload response missing video_id:`, uploadBody);
-        throw new Error("Reel upload did not return video_id - check page permissions");
-      }
+      const finalVideoId = step2VideoId || step1VideoId;
 
       // Step 3: Finish
-      console.log(`[facebook-reel] Finalizing reel with video_id: ${videoId}`);
-      const finishRes = await graphPost<{ id: string }>(
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      console.log(`[facebook-reel] Finalizing reel. Session: ${sessionId}, VideoID: ${finalVideoId}`);
+      const finishRes = await graphPost<any>(
         `/${pageId}/video_reels`,
         {
           upload_phase: "finish",
-          upload_session_id: startRes.upload_session_id,
-          video_id: videoId,
+          upload_session_id: sessionId,
+          video_id: finalVideoId, // Crucial for Reels
+          video_state: "PUBLISHED",
           description: message,
         },
         pageAccessToken
       );
       
-      return { id: finishRes.id, platform: "facebook" };
-    } catch (err) {
-      let errorMsg = 'Unknown error';
-      try {
-        if (err instanceof Error) {
-          errorMsg = err.message;
-        } else if (typeof err === 'string') {
-          errorMsg = err;
-        } else if (err && typeof err === 'object') {
-          errorMsg = JSON.stringify(err);
+      console.log(`[facebook-reel] Step 3 response:`, finishRes);
+
+      if (!finishRes.id && !finishRes.video_id) {
+        if (finishRes.success) {
+          return { id: finalVideoId || sessionId, platform: "facebook" };
         }
-      } catch {
-        errorMsg = 'Error formatting error message';
+        throw new Error(`Meta finish phase failed. Response: ${JSON.stringify(finishRes)}`);
       }
+      
+      return { id: finishRes.id || finishRes.video_id, platform: "facebook" };
+    } catch (err: any) {
       console.error(`[facebook-reel] Publish failed:`, err);
-      throw new Error(`Failed to publish Facebook Reel: ${errorMsg}`);
+      const msg = err.message || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+      throw new Error(`[REEL_FIX_V5] ${msg}`);
     }
   }
 
@@ -212,27 +213,11 @@ export async function createFacebookPost(params: {
         throw new Error(`Video binary upload failed: ${uploadRes.status} ${errText}`);
       }
 
-      // Parse upload response to get video_id
-      let uploadBody: { video_id?: string } = {};
-      try {
-        uploadBody = await uploadRes.json();
-      } catch (parseErr) {
-        console.error(`[facebook-video] Failed to parse upload response:`, await uploadRes.text());
-        throw new Error("Upload response was not valid JSON");
-      }
-
-      const videoId = uploadBody?.video_id;
-      if (!videoId) {
-        console.error(`[facebook-video] Upload response missing video_id:`, uploadBody);
-        throw new Error("Video upload did not return video_id - check page permissions");
-      }
-
       // Step 3: Finish
-      console.log(`[facebook-video] Finalizing feed video with video_id: ${videoId}`);
+      console.log(`[facebook-video] Finalizing feed video`);
       const body: Record<string, unknown> = {
         upload_phase: "finish",
         upload_session_id: startRes.upload_session_id,
-        video_id: videoId,
         description: message,
       };
 

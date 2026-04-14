@@ -630,53 +630,6 @@ export default function PostDetailsPage() {
             </div>
           </div>
 
-          {/* Performance Card */}
-          {post.status === PostStatus.Published && (
-            <div className="rounded-3xl border border-border/50 bg-card p-6 space-y-6 shadow-sm overflow-hidden relative">
-              <div className="absolute top-0 right-0 p-4 opacity-5">
-                <BarChart3 className="h-24 w-24" />
-              </div>
-              
-              <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Performance</h2>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Eye className="h-3.5 w-3.5" />
-                    <span className="text-[10px] font-bold uppercase tracking-tight">Reach</span>
-                  </div>
-                  <p className="text-2xl font-bold">{totalReach.toLocaleString()}</p>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Heart className="h-3.5 w-3.5" />
-                    <span className="text-[10px] font-bold uppercase tracking-tight">Likes</span>
-                  </div>
-                  <p className="text-2xl font-bold">{totalLikes.toLocaleString()}</p>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    <span className="text-[10px] font-bold uppercase tracking-tight">Comments</span>
-                  </div>
-                  <p className="text-2xl font-bold">{totalComments.toLocaleString()}</p>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Share2 className="h-3.5 w-3.5" />
-                    <span className="text-[10px] font-bold uppercase tracking-tight">Shares</span>
-                  </div>
-                  <p className="text-2xl font-bold">{totalShares.toLocaleString()}</p>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-border/40">
-                <Button variant="ghost" className="w-full text-xs gap-2" size="sm">
-                  View Full Analytics <BarChart3 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* Social Preview Placeholder */}
           <div className="rounded-3xl border border-dashed border-border/60 bg-muted/5 p-8 text-center space-y-4">

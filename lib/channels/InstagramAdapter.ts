@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════
-// FACEBOOK CHANNEL ADAPTER
-// Fetches comments and DMs from Facebook via Meta Graph API
+// INSTAGRAM CHANNEL ADAPTER
+// Fetches comments and DMs from Instagram via Meta Graph API
 // ════════════════════════════════════════════════════════════
 
 import { Platform } from "@/types";
@@ -15,24 +15,14 @@ import {
 } from "./types";
 import { graphGet, graphPost, MetaApiError } from "@/lib/meta/client";
 
-export class FacebookAdapter extends BaseChannelAdapter {
-  platform: Platform = Platform.Facebook;
+export class InstagramAdapter extends BaseChannelAdapter {
+  platform: Platform = Platform.Instagram;
 
-  // Facebook Graph API v21.0
-  private readonly API_VERSION = "v21.0";
+  // Instagram uses the Meta Graph API
   private readonly GRAPH_API_BASE = "https://graph.facebook.com";
 
-  // Rate limiting config for Facebook
-  protected rateLimitConfig = {
-    requestsPerSecond: 10,
-    requestsPerMinute: 600,
-    requestsPerHour: 10000,
-    retryAttempts: 3,
-    initialBackoffMs: 500,
-  };
-
   /**
-   * Fetch comments from a Facebook post
+   * Fetch comments from an Instagram media object
    */
   async fetchComments(
     params: FetchCommentsParams
@@ -45,7 +35,7 @@ export class FacebookAdapter extends BaseChannelAdapter {
           throw new ChannelAdapterError(
             this.platform,
             'MISSING_TOKEN',
-            'Page access token is required'
+            'Access token is required (Instagram requires a Page token)'
           );
         }
 
@@ -53,17 +43,17 @@ export class FacebookAdapter extends BaseChannelAdapter {
           throw new ChannelAdapterError(
             this.platform,
             'INVALID_PARAMS',
-            'Post ID is required'
+            'Media ID is required'
           );
         }
 
         const apiParams: Record<string, string | number> = {
-          fields: 'id,from{id,name,picture.type(large)},message,created_time,like_count,comments.limit(0).summary(total_count)',
+          fields: 'id,from{id,username},text,timestamp,like_count',
           limit,
         };
 
-        // Convert ISO timestamp to Unix timestamp if provided
-        // Subtract 60 seconds to catch recently added comments
+        console.log(`[InstagramAdapter] Fetching comments for Media ID: ${postId}`);
+
         if (since) {
           const unixTs = Math.floor(new Date(since).getTime() / 1000) - 60;
           apiParams.since = unixTs;
@@ -73,25 +63,26 @@ export class FacebookAdapter extends BaseChannelAdapter {
           const response = await graphGet<{
             data: Array<{
               id: string;
-              from: { id: string; name: string; picture?: { data?: { url: string } } };
-              message: string;
-              created_time: string;
+              from?: { id: string; username: string; name: string };
+              text: string;
+              timestamp: string;
               like_count?: number;
-              comments?: { summary?: { total_count: number } };
+              replies?: { data?: Array<any> };
             }>;
           }>(`/${postId}/comments`, apiParams, pageAccessToken);
 
           return (response.data || []).map((comment) => ({
             externalId: comment.id,
-            authorName: comment.from?.name || 'Facebook User',
+            authorName: comment.from?.username || 'Instagram User',
             authorUserId: comment.from?.id || '',
-            authorAvatar: comment.from?.picture?.data?.url || null,
-            content: comment.message || '',
-            receivedAt: comment.created_time,
+            authorAvatar: null,
+            content: comment.text || '',
+            receivedAt: comment.timestamp,
             likesCount: comment.like_count || 0,
-            replyCount: comment.comments?.summary?.total_count || 0,
+            replyCount: 0, // Replies require a separate fetch per comment or a complex nested query
           }));
         } catch (error) {
+          console.error(`[InstagramAdapter] API Error for Media ${postId}:`, error);
           if (error instanceof MetaApiError) {
             throw new ChannelAdapterError(
               this.platform,
@@ -109,7 +100,7 @@ export class FacebookAdapter extends BaseChannelAdapter {
   }
 
   /**
-   * Fetch direct messages (Messenger) for a Facebook page
+   * Fetch direct messages for an Instagram Business account
    */
   async fetchDirectMessages(
     params: FetchDirectMessagesParams
@@ -127,52 +118,55 @@ export class FacebookAdapter extends BaseChannelAdapter {
         }
 
         const apiParams: Record<string, string | number> = {
-          fields: 'id,senders,message,created_timestamp,from{id,name,email},to{data{id,name,email}}',
+          fields: 'id,participants,messages{id,text,created_time,from,to}',
           limit,
+          platform: 'instagram', // Filter for Instagram DMs on /me/conversations
         };
 
         if (cursor) {
           apiParams.after = cursor;
         }
 
-        if (since) {
-          const unixTs = Math.floor(new Date(since).getTime() / 1000);
-          apiParams.since = unixTs;
-        }
-
         try {
           const response = await graphGet<{
             data: Array<{
               id: string;
-              senders?: { data?: Array<{ email: string; name: string }> };
-              message?: string;
-              created_timestamp: number;
-              from?: { id: string; name: string; email: string };
-              to?: { data?: Array<{ id: string; name: string; email: string }> };
+              participants?: { data: Array<{ id: string; name: string; username: string }> };
+              messages?: {
+                data: Array<{
+                  id: string;
+                  text: string;
+                  created_time: string;
+                  from: { id: string; username: string };
+                  to: { data: Array<{ id: string; username: string }> };
+                }>;
+              };
             }>;
-            paging?: { cursors?: { after?: string } };
           }>('/me/conversations', apiParams, accessToken);
 
           const messages: FetchedDirectMessage[] = [];
 
           for (const conversation of response.data || []) {
-            if (conversation.message) {
-              const sender = conversation.senders?.data?.[0];
-              const recipient = conversation.to?.data?.[0];
-
+            const lastMessage = conversation.messages?.data?.[0];
+            if (lastMessage) {
               messages.push({
-                externalId: conversation.id,
+                externalId: lastMessage.id,
                 conversationId: conversation.id,
-                senderName: sender?.name || 'Unknown',
-                senderUserId: sender?.email || '',
+                senderName: lastMessage.from?.username || 'Instagram User',
+                senderUserId: lastMessage.from?.id || '',
                 senderAvatar: null,
-                recipientName: recipient?.name,
-                recipientUserId: recipient?.email,
-                content: conversation.message,
+                content: lastMessage.text,
                 messageType: 'text',
-                receivedAt: new Date(conversation.created_timestamp * 1000).toISOString(),
+                receivedAt: lastMessage.created_time,
               });
             }
+          }
+
+          console.log(`[InstagramAdapter] Fetching DMs for account: ${accessToken.slice(0, 10)}...`);
+
+          if (since) {
+            const sinceDate = new Date(since).getTime();
+            return messages.filter((m) => new Date(m.receivedAt).getTime() > sinceDate);
           }
 
           return messages;
@@ -197,7 +191,7 @@ export class FacebookAdapter extends BaseChannelAdapter {
   }
 
   /**
-   * Send a reply to a Facebook comment
+   * Send a reply to an Instagram comment
    */
   async sendReply(params: SendReplyParams): Promise<{ externalId: string }> {
     return this.withRetry(
@@ -224,13 +218,13 @@ export class FacebookAdapter extends BaseChannelAdapter {
           throw new ChannelAdapterError(
             this.platform,
             'UNSUPPORTED_TARGET',
-            'Only comments are supported for replies'
+            'Only comments are supported for replies via this adapter'
           );
         }
 
         try {
           const response = await fetch(
-            `${this.GRAPH_API_BASE}/${targetId}/comments`,
+            `${this.GRAPH_API_BASE}/${targetId}/replies`,
             {
               method: 'POST',
               headers: {
@@ -281,9 +275,9 @@ export class FacebookAdapter extends BaseChannelAdapter {
   }
 
   /**
-   * Get Facebook's character limit for replies
+   * Get Instagram's character limit for replies
    */
   getCharacterLimit(): number {
-    return 63206; // Facebook's limit is essentially unlimited, but practical limit
+    return 2200; // Instagram's caption/comment limit
   }
 }

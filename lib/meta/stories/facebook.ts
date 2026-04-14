@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { graphPost, graphPut } from "../client";
+import { graphPost, graphPostMultipart } from "../client";
 
 const FacebookPhotoStorySchema = z.object({
   pageId: z.string().min(1),
@@ -18,57 +18,38 @@ const FacebookVideoStorySchema = z.object({
 type PhotoStoryInput = z.infer<typeof FacebookPhotoStorySchema>;
 type VideoStoryInput = z.infer<typeof FacebookVideoStorySchema>;
 
-/**
- * Publish a photo story to a Facebook Page
- * Uses POST /{page-id}/photo_stories endpoint
- * @throws {Error} If upload fails or token is invalid
- */
 export async function publishPhotoStory(
   input: PhotoStoryInput
 ): Promise<{ id: string; platform: "facebook" }> {
   const validated = FacebookPhotoStorySchema.parse(input);
 
   try {
-    const res = await graphPost<{ id: string }>(
-      `/${validated.pageId}/photo_stories`,
-      {
-        url: validated.imageUrl,
-        ...(validated.caption && { caption: validated.caption }),
-      },
+    console.log(`[facebook-story] Publishing photo story via core /photos endpoint with is_story=true`);
+    const imageBlob = await fetch(validated.imageUrl).then(r => r.blob());
+
+    // Create form data for multipart upload
+    const formData = new FormData();
+    formData.append("source", imageBlob);
+    if (validated.caption) {
+      formData.append("caption", validated.caption);
+    }
+
+    const res = await graphPostMultipart<{ id: string }>(
+      `/${validated.pageId}/photos?is_story=true&published=true`,
+      formData,
       validated.pageAccessToken
     );
 
-    console.log(`[facebook-story] Photo story published: ${res.id}`);
+    console.log(`[facebook-story] Photo story published successfully: ${res.id}`);
     return { id: res.id, platform: "facebook" };
   } catch (err: any) {
-    const errorCode = err?.error?.code;
-    const errorMsg = err?.error?.message || err?.message || String(err);
-    const errorType = err?.error?.type || "unknown";
+    const errorCode = err?.code || err?.error?.code;
+    const errorMsg = err?.message || err?.error?.message || String(err);
+    const errorType = err?.type || err?.error?.type || "unknown";
 
-    console.error(`[facebook-story] Error code: ${errorCode}, type: ${errorType}, msg: ${errorMsg}`);
+    console.error(`[facebook-story] Photo story failed: code=${errorCode}, type=${errorType}, msg=${errorMsg}`);
 
-    // Map specific error codes to user-friendly messages
-    if (errorCode === 200 || errorMsg.includes("permission")) {
-      throw new Error(
-        "Permission denied. Ensure the page has `pages_manage_posts` scope and is active."
-      );
-    }
-    if (errorCode === 100 || errorMsg.includes("invalid") || errorMsg.includes("Invalid")) {
-      throw new Error(
-        "Invalid image URL or format. Ensure the image is accessible (HTTPS), JPG/PNG format, and under 8MB."
-      );
-    }
-    if (errorCode === 1 || errorMsg.includes("API")) {
-      throw new Error(
-        "Meta API error. This may be temporary. Please try again in a few seconds."
-      );
-    }
-    if (errorMsg === "Unknown" || errorMsg === "An unknown error has occurred") {
-      throw new Error(
-        "Unknown error from Meta. Please check: 1) Image URL is accessible, 2) Image is JPG/PNG, 3) Page is still connected."
-      );
-    }
-    throw new Error(`Failed to publish photo story: ${errorMsg}`);
+    throw new Error(`Facebook Photo Story Error: ${errorMsg} (Code: ${errorCode}, Type: ${errorType}) ${err.fbTraceId ? `[Trace: ${err.fbTraceId}]` : ""}`);
   }
 }
 
@@ -90,49 +71,60 @@ export async function publishVideoStory(
       console.log(
         `[facebook-story] Starting video upload (attempt ${attempt + 1}/${maxRetries})`
       );
-      const startRes = await graphPost<{
-        upload_session_id: string;
-        upload_url: string;
-      }>(
+      const startRes = await graphPost<any>(
         `/${validated.pageId}/video_stories`,
         { upload_phase: "start" },
         validated.pageAccessToken
       );
 
-      // Step 2: Upload video binary to the returned URL
-      console.log(`[facebook-story] Uploading video to temporary URL`);
-      const videoBlob = await fetch(validated.videoUrl).then((r) =>
-        r.blob()
-      );
+      const sessionId = startRes.upload_session_id || startRes.video_id;
+      const videoId = startRes.video_id;
+
+      // Step 2: Upload video binary
+      console.log(`[facebook-story] Uploading video binary to session: ${sessionId}`);
+      const videoBlob = await fetch(validated.videoUrl).then((r) => r.blob());
 
       const uploadRes = await fetch(startRes.upload_url, {
-        method: "PUT",
+        method: "POST", // Meta prefers POST for binary in many resumable contexts
         body: videoBlob,
-        headers: { "Content-Type": "video/mp4" },
+        headers: {
+          "Authorization": `OAuth ${validated.pageAccessToken}`,
+          "offset": "0",
+          "file_size": String(videoBlob.size),
+          "Content-Type": "application/octet-stream"
+        },
       });
 
       if (!uploadRes.ok) {
-        throw new Error(
-          `Upload failed: ${uploadRes.status} ${uploadRes.statusText}`
-        );
+        const errText = await uploadRes.text();
+        throw new Error(`Upload failed (${uploadRes.status}): ${errText}`);
       }
 
+      // Read response to ensure it's processed
+      await uploadRes.text();
+
       // Step 3: Finish upload and publish
+      // Small delay for cluster sync
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       console.log(
-        `[facebook-story] Finalizing story with session ${startRes.upload_session_id}`
+        `[facebook-story] Finalizing story with session ${sessionId}${videoId ? ` and video_id ${videoId}` : ''}`
       );
-      const finishRes = await graphPost<{ id: string }>(
+      const finishRes = await graphPost<any>(
         `/${validated.pageId}/video_stories`,
         {
-          upload_session_id: startRes.upload_session_id,
           upload_phase: "finish",
+          upload_session_id: sessionId,
+          ...(videoId ? { video_id: videoId } : {}),
+          video_state: "PUBLISHED",
+          published: true,
           ...(validated.caption && { caption: validated.caption }),
         },
         validated.pageAccessToken
       );
 
-      console.log(`[facebook-story] Video story published: ${finishRes.id}`);
-      return { id: finishRes.id, platform: "facebook" };
+      console.log(`[facebook-story] Video story published: ${finishRes.id || finishRes.video_id}`);
+      return { id: finishRes.id || finishRes.video_id, platform: "facebook" };
     } catch (err: any) {
       const errorCode = err?.error?.code;
       const errorMsg = err?.error?.message || err?.message || String(err);
