@@ -47,19 +47,25 @@ export class InstagramAdapter extends BaseChannelAdapter {
           );
         }
 
+        // Standard fields for IG comments
         const apiParams: Record<string, string | number> = {
           fields: 'id,from{id,username},text,timestamp,like_count',
           limit,
         };
 
-        console.log(`[InstagramAdapter] Fetching comments for Media ID: ${postId}`);
+        console.log(`[InstagramAdapter] Fetching comments for Media ID: ${postId}, since: ${since}`);
 
         if (since) {
-          const unixTs = Math.floor(new Date(since).getTime() / 1000) - 60;
-          apiParams.since = unixTs;
+          const sinceDate = new Date(since);
+          if (!isNaN(sinceDate.getTime())) {
+            // Subtract small buffer to catch recently added comments
+            const unixTs = Math.floor(sinceDate.getTime() / 1000) - 120;
+            apiParams.since = unixTs;
+          }
         }
 
         try {
+          // Attempt to fetch with 'from' field (requires specific permissions)
           const response = await graphGet<{
             data: Array<{
               id: string;
@@ -79,10 +85,37 @@ export class InstagramAdapter extends BaseChannelAdapter {
             content: comment.text || '',
             receivedAt: comment.timestamp,
             likesCount: comment.like_count || 0,
-            replyCount: 0, // Replies require a separate fetch per comment or a complex nested query
+            replyCount: 0,
           }));
         } catch (error) {
-          console.error(`[InstagramAdapter] API Error for Media ${postId}:`, error);
+          // FALLBACK: If 'from' field access is denied (common), retry without it
+          // Error 100 usually means 'Invalid parameter' (often 'from')
+          if (error instanceof MetaApiError && (error.code === 100 || error.code === 200 || error.status === 403)) {
+            console.warn(`[InstagramAdapter] Retrying WITHOUT 'from' field for Media ${postId} due to error: ${error.message}`);
+            
+            const fallbackParams = { ...apiParams, fields: 'id,text,timestamp,like_count' };
+            const fallbackRes = await graphGet<{
+              data: Array<{
+                id: string;
+                text: string;
+                timestamp: string;
+                like_count?: number;
+              }>;
+            }>(`/${postId}/comments`, fallbackParams, pageAccessToken);
+
+            return (fallbackRes.data || []).map((comment) => ({
+              externalId: comment.id,
+              authorName: 'Instagram User',
+              authorUserId: '',
+              authorAvatar: null,
+              content: comment.text || '',
+              receivedAt: comment.timestamp,
+              likesCount: comment.like_count || 0,
+              replyCount: 0,
+            }));
+          }
+
+          console.error(`[InstagramAdapter] Final API Error for Media ${postId}:`, error);
           if (error instanceof MetaApiError) {
             throw new ChannelAdapterError(
               this.platform,
@@ -271,6 +304,94 @@ export class InstagramAdapter extends BaseChannelAdapter {
         }
       },
       { platform: this.platform, operation: 'sendReply' }
+    );
+  }
+
+  /**
+   * Fetch recent comments across the entire Instagram account
+   * This is the "Correct Method" for a full inbox sync as it discovers
+   * comments on media that might not be in our database.
+   */
+  async fetchAccountActivityComments(params: {
+    accountId: string;
+    accessToken: string;
+    pageAccessToken?: string;
+    since?: string;
+    limit?: number;
+  }): Promise<Array<FetchedComment & { parentId?: string; parentType?: 'post' | 'comment' }>> {
+    return this.withRetry(
+      async () => {
+        const { accountId, pageAccessToken, since, limit = 25 } = params;
+        const token = pageAccessToken;
+
+        if (!token) {
+          throw new ChannelAdapterError(this.platform, 'MISSING_TOKEN', 'Page access token is required');
+        }
+
+        // Ensure we have the numeric ID for the Instagram account
+        const igUserId = accountId.replace(/^meta_ig_/, '');
+
+        // We use the /{ig-user-id}/media endpoint and expand comments
+        const apiParams: Record<string, string | number> = {
+          fields: 'id,comments{id,from{id,username},text,timestamp,like_count}',
+          limit,
+        };
+
+        if (since) {
+          const sinceDate = new Date(since);
+          if (!isNaN(sinceDate.getTime())) {
+            const unixTs = Math.floor(sinceDate.getTime() / 1000) - 120;
+            apiParams.since = unixTs;
+          }
+        }
+
+        try {
+          const response = await graphGet<{
+            data: Array<{
+              id: string;
+              comments?: {
+                data: Array<{
+                  id: string;
+                  from?: { id: string; username: string };
+                  text: string;
+                  timestamp: string;
+                  like_count?: number;
+                }>;
+              };
+            }>;
+          }>(`/${igUserId}/media`, apiParams, token);
+
+          const allComments: Array<FetchedComment & { parentId?: string; parentType?: 'post' | 'comment' }> = [];
+
+          for (const media of response.data || []) {
+            if (media.comments?.data) {
+              for (const comment of media.comments.data) {
+                allComments.push({
+                  externalId: comment.id,
+                  authorName: comment.from?.username || 'Instagram User',
+                  authorUserId: comment.from?.id || '',
+                  authorAvatar: null,
+                  content: comment.text || '',
+                  receivedAt: comment.timestamp,
+                  likesCount: comment.like_count || 0,
+                  replyCount: 0,
+                  parentId: media.id,
+                  parentType: 'post'
+                });
+              }
+            }
+          }
+
+          return allComments;
+        } catch (error) {
+          console.error(`[InstagramAdapter] Error during account activity sync:`, error);
+          if (error instanceof MetaApiError) {
+            throw new ChannelAdapterError(this.platform, 'API_ERROR', error.message, error.status);
+          }
+          throw error;
+        }
+      },
+      { platform: this.platform, operation: 'fetchAccountActivityComments' }
     );
   }
 

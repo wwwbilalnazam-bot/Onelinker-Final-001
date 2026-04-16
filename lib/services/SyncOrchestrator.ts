@@ -245,38 +245,36 @@ export class SyncOrchestrator {
         throw new Error(`Failed to fetch posts: ${postsError.message}`);
       }
 
-      console.log(`[SyncOrchestrator] Account ${accountId}: Found ${posts?.length || 0} published posts to sync`);
-
-      const inboxMessages: any[] = [];
-
-      for (const post of posts || []) {
-        if (!post.outstand_post_id) {
-          skippedCount++;
-          continue;
-        }
-
-        // Extract platform-specific post ID (handle 'meta_' prefix and comma-separated IDs)
-        // Find index of current platform in post.platforms to get the matching ID
-        const platformIndex = post.platforms.indexOf(platform);
-        if (platformIndex === -1) {
-          skippedCount++;
-          continue;
-        }
-
-        const ids = post.outstand_post_id.replace(/^meta_/, '').split(',');
-        const postId = ids[platformIndex] || ids[0]; // fallback to first if index out of bounds
-
+      // ── Step 1: Account-wide discovery (The "Correct Method") ──────────────────
+      // For Instagram and Facebook, we prefer discovery mode to find comments
+      // on media we might not have in our database.
+      if (adapter.fetchAccountActivityComments) {
         try {
-          // Fetch comments
-          const comments = await adapter.fetchComments({
-            postId,
-            pageAccessToken,
+          console.log(`[SyncOrchestrator] Account ${accountId}: Using Discovery Sync mode`);
+          const activityComments = await adapter.fetchAccountActivityComments({
+            accountId,
             accessToken,
-            since: since || post.published_at,
+            pageAccessToken,
+            since,
+            limit: 50,
           });
 
-          // Map to inbox_messages format
-          for (const comment of comments) {
+          for (const comment of activityComments) {
+            // Try to find if this parentId (media ID) matches any of our known posts
+            let localPostId: string | undefined;
+            if (comment.parentId) {
+              const { data: matchedPosts } = await this.supabase
+                .from('posts')
+                .select('id, outstand_post_id')
+                .filter('outstand_post_id', 'ilike', `%${comment.parentId}%`)
+                .eq('workspace_id', workspaceId)
+                .limit(1);
+              
+              if (matchedPosts && matchedPosts.length > 0) {
+                localPostId = matchedPosts[0].id;
+              }
+            }
+
             inboxMessages.push({
               workspace_id: workspaceId,
               platform,
@@ -285,24 +283,91 @@ export class SyncOrchestrator {
               author_name: comment.authorName,
               author_avatar: comment.authorAvatar,
               content: comment.content,
-              post_id: post.id,
+              post_id: localPostId || null,
               status: 'unread',
               received_at: comment.receivedAt,
             });
-
             syncedCount++;
           }
         } catch (error) {
-          console.error(`Error fetching comments for post ${post.id}:`, error);
+          console.error(`[SyncOrchestrator] Discovery Sync failed for ${accountId}:`, error);
           errorCount++;
         }
       }
 
-      // Upsert all messages to database
+      // ── Step 2: Fallback / Post-specific sync ──────────────────────────────────
+      // If we don't have account-wide sync or if we want to be thorough,
+      // we still check our known published posts.
+      if (inboxMessages.length === 0) {
+        const { data: posts, error: postsError } = await this.supabase
+          .from('posts')
+          .select('id, outstand_post_id, platforms, account_ids, published_at')
+          .eq('workspace_id', workspaceId)
+          .eq('status', 'published')
+          .contains('platforms', [platform])
+          .contains('account_ids', [localAccount?.id || ""])
+          .order('published_at', { ascending: false })
+          .limit(30);
+
+        if (postsError) {
+          throw new Error(`Failed to fetch posts: ${postsError.message}`);
+        }
+
+        console.log(`[SyncOrchestrator] Account ${accountId}: Falling back to post-specific sync for ${posts?.length || 0} posts`);
+
+        for (const post of posts || []) {
+          if (!post.outstand_post_id) {
+            skippedCount++;
+            continue;
+          }
+
+          const platformIndex = post.platforms.indexOf(platform);
+          if (platformIndex === -1) {
+            skippedCount++;
+            continue;
+          }
+
+          const ids = post.outstand_post_id.replace(/^meta_/, '').split(',');
+          const postId = ids[platformIndex] || ids[0];
+
+          try {
+            const comments = await adapter.fetchComments({
+              postId,
+              pageAccessToken,
+              accessToken,
+              since: since || post.published_at,
+            });
+
+            for (const comment of comments) {
+              inboxMessages.push({
+                workspace_id: workspaceId,
+                platform,
+                account_id: accountId,
+                external_message_id: comment.externalId,
+                author_name: comment.authorName,
+                author_avatar: comment.authorAvatar,
+                content: comment.content,
+                post_id: post.id,
+                status: 'unread',
+                received_at: comment.receivedAt,
+              });
+              syncedCount++;
+            }
+          } catch (error) {
+            console.error(`Error fetching comments for post ${post.id}:`, error);
+            errorCount++;
+          }
+        }
+      }
+
+      // ── Step 3: Persistence ────────────────────────────────────────────────────
       if (inboxMessages.length > 0) {
+        // Remove duplicates within the local array before upsert
+        const uniqueMessages = Array.from(new Map(inboxMessages.map(m => [m.external_message_id, m])).values());
+        
         const { error: upsertError } = await this.supabase
           .from('inbox_messages')
-          .upsert(inboxMessages, {
+          .upsert(uniqueMessages, {
             onConflict: 'workspace_id,external_message_id',
             ignoreDuplicates: true,
           });

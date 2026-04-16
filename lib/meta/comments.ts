@@ -100,8 +100,11 @@ export async function fetchInstagramMediaComments(params: {
   };
 
   if (since) {
-    const unixTs = Math.floor(new Date(since).getTime() / 1000);
-    apiParams.since = unixTs;
+    const sinceDate = new Date(since);
+    if (!isNaN(sinceDate.getTime())) {
+      const unixTs = Math.floor(sinceDate.getTime() / 1000) - 120;
+      apiParams.since = unixTs;
+    }
   }
 
   try {
@@ -123,6 +126,20 @@ export async function fetchInstagramMediaComments(params: {
       receivedAt: comment.timestamp,
     }));
   } catch (error) {
+    // Fallback: If 'from' causes error (common with missing Advanced Access), try without it
+    if (error instanceof MetaApiError && (error.code === 100 || error.code === 200 || error.status === 403)) {
+      console.warn(`[instagram] Retrying without 'from' field for media ${igMediaId}`);
+      apiParams.fields = "id,text,timestamp";
+      const fallbackRes = await graphGet<any>(`/${igMediaId}/comments`, apiParams, pageAccessToken);
+      return (fallbackRes.data || []).map((comment: any) => ({
+        externalId: comment.id,
+        authorName: "Instagram User",
+        authorAvatar: null,
+        content: comment.text || "",
+        receivedAt: comment.timestamp,
+      }));
+    }
+
     if (error instanceof MetaApiError) {
       console.error(`[instagram] Error fetching comments for media ${igMediaId}:`, {
         message: error.message,

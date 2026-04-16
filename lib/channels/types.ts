@@ -96,6 +96,17 @@ export interface IChannelAdapter {
   sendReply(params: SendReplyParams): Promise<{ externalId: string }>;
 
   /**
+   * Fetch recent comments for the entire account (across all media/posts)
+   */
+  fetchAccountActivityComments?(params: {
+    accountId: string;
+    accessToken: string;
+    pageAccessToken?: string;
+    since?: string;
+    limit?: number;
+  }): Promise<Array<FetchedComment & { parentId?: string; parentType?: 'post' | 'comment' }>>;
+
+  /**
    * Refresh OAuth token if expired
    * @returns new access token
    */

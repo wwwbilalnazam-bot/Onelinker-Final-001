@@ -17,37 +17,44 @@ export async function fetchFacebookPostMetrics(
   pagePostId: string,
   pageAccessToken: string
 ): Promise<MetaMetrics> {
-  // We use post_impressions_unique as proxy for reach
-  const metrics = [
-    "post_reactions_by_type_total",
+  // 1. Fetch Insights (Reach, Impressions, Clicks)
+  const insightsMetrics = [
     "post_impressions",
-    "post_impressions_unique",
+    "post_impressions_unique", // Reach
     "post_clicks"
   ];
 
   try {
-    const res = await graphGet<{ data: Array<{ name: string; values: Array<{ value: any }> }> }>(
+    const insightsRes = await graphGet<{ data: Array<{ name: string; values: Array<{ value: any }> }> }>(
       `/${pagePostId}/insights`,
-      { metric: metrics.join(",") },
+      { metric: insightsMetrics.join(",") },
       pageAccessToken
     );
 
-    const getMetric = (name: string) => {
-      const item = res.data.find(d => d.name === name);
+    const getInsight = (name: string) => {
+      const item = insightsRes.data.find(d => d.name === name);
       return item?.values[0]?.value ?? 0;
     };
 
-    // post_reactions_by_type_total is an object { like: X, love: Y, ... }
-    const reactions = getMetric("post_reactions_by_type_total");
-    const likes = typeof reactions === "object" ? Object.values(reactions).reduce((a: any, b: any) => a + b, 0) : 0;
+    // 2. Fetch Object Counts (Likes, Comments, Shares)
+    // Doc: https://developers.facebook.com/docs/graph-api/reference/post/
+    const objectRes = await graphGet<{
+        likes?: { summary: { total_count: number } };
+        comments?: { summary: { total_count: number } };
+        shares?: { count: number };
+    }>(
+      `/${pagePostId}`,
+      { fields: "likes.summary(true).limit(0),comments.summary(true).limit(0),shares" },
+      pageAccessToken
+    );
 
     return {
-      likes: Number(likes),
-      comments: 0, // Not in insights, usually fetched via /{post-id}?fields=comments.summary(true)
-      shares: 0,   // Not in insights, usually fetched via /{post-id}?fields=shares
-      reach: Number(getMetric("post_impressions_unique")),
-      impressions: Number(getMetric("post_impressions")),
-      clicks: Number(getMetric("post_clicks")),
+      likes: objectRes.likes?.summary?.total_count ?? 0,
+      comments: objectRes.comments?.summary?.total_count ?? 0,
+      shares: objectRes.shares?.count ?? 0,
+      reach: Number(getInsight("post_impressions_unique")),
+      impressions: Number(getInsight("post_impressions")),
+      clicks: Number(getInsight("post_clicks")),
     };
   } catch (err) {
     console.error(`[meta/analytics] Failed to fetch FB insights for ${pagePostId}:`, err);
@@ -64,27 +71,26 @@ export async function fetchInstagramMediaMetrics(
   pageAccessToken: string
 ): Promise<MetaMetrics> {
   // Metrics vary by media type (image vs video vs reel)
-  // For simplicity, we fetch common ones.
   const metrics = [
     "impressions",
     "reach",
-    "engagement",
-    "saved"
+    "saved",
+    "video_views"
   ];
 
   try {
-    const res = await graphGet<{ data: Array<{ name: string; values: Array<{ value: any }> }> }>(
+    const insightsRes = await graphGet<{ data: Array<{ name: string; values: Array<{ value: any }> }> }>(
       `/${igMediaId}/insights`,
       { metric: metrics.join(",") },
       pageAccessToken
     );
 
-    const getMetric = (name: string) => {
-      const item = res.data.find(d => d.name === name);
+    const getInsight = (name: string) => {
+      const item = insightsRes.data.find(d => d.name === name);
       return item?.values[0]?.value ?? 0;
     };
 
-    // We also need likes and comments which are on the media object itself, not in insights
+    // We also need likes and comments which are on the media object itself
     const mediaRes = await graphGet<{ like_count: number; comments_count: number }>(
       `/${igMediaId}`,
       { fields: "like_count,comments_count" },
@@ -94,9 +100,9 @@ export async function fetchInstagramMediaMetrics(
     return {
       likes: mediaRes.like_count ?? 0,
       comments: mediaRes.comments_count ?? 0,
-      shares: 0,
-      reach: Number(getMetric("reach")),
-      impressions: Number(getMetric("impressions")),
+      shares: 0, // Shares (sends) for IG are only available in insights for specifically business accounts and sometimes only for reels.
+      reach: Number(getInsight("reach")),
+      impressions: Number(getInsight("impressions")),
       clicks: 0,
     };
   } catch (err) {

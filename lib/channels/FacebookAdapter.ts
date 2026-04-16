@@ -63,10 +63,13 @@ export class FacebookAdapter extends BaseChannelAdapter {
         };
 
         // Convert ISO timestamp to Unix timestamp if provided
-        // Subtract 60 seconds to catch recently added comments
+        // Subtract 120 seconds to catch recently added comments and account for clock drift
         if (since) {
-          const unixTs = Math.floor(new Date(since).getTime() / 1000) - 60;
-          apiParams.since = unixTs;
+          const sinceDate = new Date(since);
+          if (!isNaN(sinceDate.getTime())) {
+            const unixTs = Math.floor(sinceDate.getTime() / 1000) - 120;
+            apiParams.since = unixTs;
+          }
         }
 
         try {
@@ -277,6 +280,89 @@ export class FacebookAdapter extends BaseChannelAdapter {
         }
       },
       { platform: this.platform, operation: 'sendReply' }
+    );
+  }
+
+  /**
+   * Fetch recent comments across the entire Facebook Page (Discovery Mode)
+   */
+  async fetchAccountActivityComments(params: {
+    accountId: string;
+    accessToken: string;
+    pageAccessToken?: string;
+    since?: string;
+    limit?: number;
+  }): Promise<Array<FetchedComment & { parentId?: string; parentType?: 'post' | 'comment' }>> {
+    return this.withRetry(
+      async () => {
+        const { accountId, pageAccessToken, since, limit = 25 } = params;
+
+        if (!pageAccessToken) {
+          throw new ChannelAdapterError(this.platform, 'MISSING_TOKEN', 'Page access token is required');
+        }
+
+        const pageId = accountId.replace(/^meta_fb_/, '');
+
+        const apiParams: Record<string, string | number> = {
+          fields: 'id,comments{id,from{id,name,picture},message,created_time,like_count}',
+          limit,
+        };
+
+        if (since) {
+          const sinceDate = new Date(since);
+          if (!isNaN(sinceDate.getTime())) {
+            const unixTs = Math.floor(sinceDate.getTime() / 1000) - 120;
+            apiParams.since = unixTs;
+          }
+        }
+
+        try {
+          const response = await graphGet<{
+            data: Array<{
+              id: string;
+              comments?: {
+                data: Array<{
+                  id: string;
+                  from?: { id: string; name: string; picture?: { data: { url: string } } };
+                  message: string;
+                  created_time: string;
+                  like_count?: number;
+                }>;
+              };
+            }>;
+          }>(`/${pageId}/feed`, apiParams, pageAccessToken);
+
+          const allComments: Array<FetchedComment & { parentId?: string; parentType?: 'post' | 'comment' }> = [];
+
+          for (const post of response.data || []) {
+            if (post.comments?.data) {
+              for (const comment of post.comments.data) {
+                allComments.push({
+                  externalId: comment.id,
+                  authorName: comment.from?.name || 'Facebook User',
+                  authorUserId: comment.from?.id || '',
+                  authorAvatar: comment.from?.picture?.data?.url || null,
+                  content: comment.message || '',
+                  receivedAt: comment.created_time,
+                  likesCount: comment.like_count || 0,
+                  replyCount: 1, // Fallback
+                  parentId: post.id,
+                  parentType: 'post'
+                });
+              }
+            }
+          }
+
+          return allComments;
+        } catch (error) {
+          console.error(`[FacebookAdapter] Error during account activity sync:`, error);
+          if (error instanceof MetaApiError) {
+            throw new ChannelAdapterError(this.platform, 'API_ERROR', error.message, error.status);
+          }
+          throw error;
+        }
+      },
+      { platform: this.platform, operation: 'fetchAccountActivityComments' }
     );
   }
 

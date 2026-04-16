@@ -25,6 +25,7 @@ import {
   getLinkedInAccessToken,
   disconnectLinkedInAccount,
 } from "@/lib/linkedin/accounts";
+import { fetchLinkedInPostMetrics } from "@/lib/linkedin/analytics";
 import {
   createLinkedInPost,
   deleteLinkedInPost,
@@ -300,14 +301,39 @@ export class LinkedInDirectProvider implements SocialProvider {
       .eq("outstand_post_id", params.providerPostId);
   }
 
-  // ── Analytics (stub) ───────────────────────────────────
-
   async getPostAnalytics(params: {
     providerPostId: string;
     apiKey?: string | null;
   }): Promise<PostAnalytics> {
-    void params;
-    return { likes: 0, comments: 0, shares: 0, reach: 0, impressions: 0, clicks: 0 };
+    const { providerPostId } = params;
+    const postUrn = providerPostId.replace("li_", "");
+    if (!postUrn) return { likes: 0, comments: 0, shares: 0, reach: 0, impressions: 0, clicks: 0 };
+
+    const serviceClient = createServiceClient();
+    const { data: post } = await serviceClient
+      .from("posts")
+      .select("workspace_id, account_ids")
+      .eq("outstand_post_id", providerPostId)
+      .single();
+
+    if (!post || !post.workspace_id || !post.account_ids?.[0]) {
+      return { likes: 0, comments: 0, shares: 0, reach: 0, impressions: 0, clicks: 0 };
+    }
+
+    const accountId = post.account_ids[0];
+    const tokenData = await getLinkedInAccessToken(post.workspace_id, accountId);
+    if (!tokenData) return { likes: 0, comments: 0, shares: 0, reach: 0, impressions: 0, clicks: 0 };
+
+    const stats = await fetchLinkedInPostMetrics(postUrn, tokenData.accessToken);
+
+    return {
+      likes: stats.likes,
+      comments: stats.comments,
+      shares: stats.shares,
+      reach: stats.impressions, // Use impressions as reach proxy if reach not available
+      impressions: stats.impressions,
+      clicks: stats.clicks,
+    };
   }
 
   // ── Webhooks ───────────────────────────────────────────
