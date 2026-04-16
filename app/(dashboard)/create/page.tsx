@@ -1890,7 +1890,9 @@ export default function ComposePage() {
                   <div className={cn(
                     "gap-3 hidden sm:flex sm:flex-nowrap sm:overflow-x-auto sm:pb-2 scrollbar-hide"
                   )}>
-                  {accounts.map(account => {
+                  {accounts
+                    .filter(a => selectedAccountIds.includes(a.id))
+                    .map(account => {
                     const sel = selectedAccountIds.includes(account.id);
                     const meta = PLATFORM_META[account.platform];
                     const PIcon = meta?.icon ?? Globe;
