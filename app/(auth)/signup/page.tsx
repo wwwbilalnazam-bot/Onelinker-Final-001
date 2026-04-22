@@ -168,8 +168,33 @@ function SignupContent() {
     }
 
     if (data.user && !data.session) {
+      // Send welcome email (non-blocking)
+      if (data.user.id) {
+        fetch("/api/auth/welcome-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: data.user.id,
+            email: values.email,
+            fullName: values.full_name,
+          }),
+        }).catch((err) => console.error("[Welcome Email]", err));
+      }
       router.push(`/signup/verify?email=${encodeURIComponent(values.email)}`);
       return;
+    }
+
+    // Send welcome email (non-blocking)
+    if (data.user?.id) {
+      fetch("/api/auth/welcome-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: data.user.id,
+          email: values.email,
+          fullName: values.full_name,
+        }),
+      }).catch((err) => console.error("[Welcome Email]", err));
     }
 
     toast.success("Account created! Welcome to Onelinker.");

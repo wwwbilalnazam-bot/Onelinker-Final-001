@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { sendEmail } from "@/lib/email/service";
+import { emailTemplates } from "@/lib/email/templates";
 
 export async function POST(req: NextRequest) {
   try {
@@ -109,39 +111,11 @@ async function sendInviteEmail({
   role: string;
   inviteLink: string;
 }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL ?? "hello@onelinker.ai";
-
-  if (!apiKey) {
-    console.warn("[Invitations] RESEND_API_KEY not set — skipping email. Invite link:", inviteLink);
-    return;
-  }
-
   try {
-    const { Resend } = await import("resend");
-    const resend = new Resend(apiKey);
-
-    await resend.emails.send({
-      from: `Onelinker <${from}>`,
+    await sendEmail({
       to,
       subject: `${inviterName} invited you to join ${workspaceName} on Onelinker`,
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
-          <h2 style="color: #1a1a1a; font-size: 20px; margin-bottom: 8px;">You've been invited!</h2>
-          <p style="color: #666; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
-            <strong>${inviterName}</strong> has invited you to join
-            <strong>${workspaceName}</strong> as <strong>${role}</strong> on Onelinker.
-          </p>
-          <a href="${inviteLink}"
-             style="display: inline-block; background: #7c3aed; color: #fff; text-decoration: none;
-                    padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 600;">
-            Accept Invitation
-          </a>
-          <p style="color: #999; font-size: 13px; margin-top: 24px;">
-            This invitation expires in 7 days. If you didn't expect this email, you can safely ignore it.
-          </p>
-        </div>
-      `,
+      html: emailTemplates.invitationEmail(inviterName, workspaceName, role, inviteLink),
     });
   } catch (err) {
     console.error("[Invitations] Failed to send email:", err);
