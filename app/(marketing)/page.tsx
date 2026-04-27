@@ -223,8 +223,8 @@ function PlatformMarquee() {
   return (
     <div className="relative overflow-hidden">
       {/* Fade edges */}
-      <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+      <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-20 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-20 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
       <div className="flex animate-marquee gap-8 sm:gap-12">
         {doubled.map((p, i) => (
           <div
@@ -367,8 +367,8 @@ function UploadMockup() {
              </div>
              
              {/* Limit progress bars */}
-             <div className="mt-8 space-y-4">
-                <div className="flex items-center text-[10px] text-muted-foreground font-semibold">
+             <div className="mt-8 space-y-4 overflow-x-auto">
+                <div className="flex items-center text-[10px] text-muted-foreground font-semibold whitespace-nowrap">
                    <Instagram className="h-3.5 w-3.5 text-[#E4405F]" />
                    <div className="h-1 bg-muted/60 rounded-full w-24 mx-3 overflow-hidden">
                      <div className="h-full bg-[#E4405F] w-[40%]" />
@@ -390,8 +390,8 @@ function UploadMockup() {
                    <span className="w-8">1982</span>
                    <span className="text-muted-foreground/50 w-10">#5/5</span>
                 </div>
-                
-                <div className="flex items-center text-[10px] text-muted-foreground font-semibold">
+
+                <div className="flex items-center text-[10px] text-muted-foreground font-semibold whitespace-nowrap">
                    <Youtube className="h-3.5 w-3.5 text-[#FF0000]" />
                    <div className="h-1 bg-muted/60 rounded-full w-24 mx-3 overflow-hidden">
                      <div className="h-full bg-[#FF0000] w-[30%]" />
@@ -404,7 +404,7 @@ function UploadMockup() {
         </div>
 
         {/* Right Pane (Preview) */}
-        <div className="w-full lg:w-[420px] bg-background lg:border-l border-border/30 p-6 flex flex-col relative pt-12 lg:pt-6">
+        <div className="w-full lg:w-[420px] bg-background border-t border-border/30 lg:border-t-0 lg:border-l p-6 flex flex-col relative pt-12 lg:pt-6">
            <button className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full hover:bg-muted/80 transition-colors border border-border/20 text-muted-foreground bg-muted/20">
               <X className="h-4 w-4" />
            </button>
@@ -573,7 +573,7 @@ function AnalyticsMockup() {
           { label: "Engagement", value: "8.7K", change: "+24.1%", icon: Heart },
           { label: "New Followers", value: "1,203", change: "+8.5%", icon: Users },
         ].map((s) => (
-          <div key={s.label} className="rounded-xl bg-muted/20 p-3 border border-border/20">
+          <div key={s.label} className="rounded-xl bg-muted/20 p-2 sm:p-3 border border-border/20">
             <div className="flex items-center gap-1.5 mb-1">
               <s.icon className="h-3 w-3 text-muted-foreground/50" />
               <p className="text-[10px] text-muted-foreground">{s.label}</p>
@@ -595,129 +595,151 @@ export default function LandingPage() {
   return (
     <div className="overflow-hidden bg-background">
       {/* ════════ HERO ════════ */}
-      <section className="relative pt-20 pb-24 lg:pt-32 lg:pb-40 overflow-hidden">
-        {/* Animated Background Gradients */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-16 pb-0 overflow-hidden">
+        {/* Background: Dot grid + centered glow */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute top-[20%] right-[-5%] w-[30%] h-[30%] bg-violet-500/10 rounded-full blur-[100px] animate-pulse delay-700" />
-          <div className="absolute bottom-[10%] left-[20%] w-[25%] h-[25%] bg-sky-500/10 rounded-full blur-[80px]" />
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+          {/* Dot grid pattern */}
+          <div
+            className="absolute inset-0 opacity-40"
+            style={{
+              backgroundImage: 'radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)',
+              backgroundSize: '32px 32px'
+            }}
+          />
+          {/* Centered glow behind headline */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/20 rounded-full blur-[120px]" />
+          {/* Top border line */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="max-w-5xl mx-auto text-center space-y-10 sm:space-y-12">
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-10 w-full">
+          <div className="max-w-5xl mx-auto text-center">
             {/* Announcement Badge */}
-            <AnimatedSection animation="fade-down" delay={100} className="flex justify-center">
+            <AnimatedSection animation="fade-down" delay={100} className="mb-10 flex justify-center">
               <Link
                 href="/changelog"
-                className="group inline-flex items-center gap-2.5 rounded-full border border-primary/20 bg-primary/5 hover:bg-primary/10 backdrop-blur-md px-4 py-2 text-xs font-bold text-primary transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="group inline-flex items-center gap-2.5 rounded-full border border-primary/30 bg-primary/5 hover:bg-primary/10 backdrop-blur-sm px-3.5 py-1.5 text-xs font-medium text-primary hover:text-primary transition-all"
               >
-                <Image
-                  src="/logo.png"
-                  alt="Onelinker"
-                  width={20}
-                  height={20}
-                  className="rounded-md"
-                />
-                <span>New: AI-powered content generation</span>
-                <ChevronDown className="h-3.5 w-3.5 -rotate-90 text-primary/60 group-hover:translate-x-0.5 transition-transform" />
+                <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span>New — AI caption generation is here</span>
+                <ChevronDown className="h-3 w-3 -rotate-90 group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </AnimatedSection>
 
             {/* Main Headline */}
-            <AnimatedSection animation="fade-up" delay={200}>
-              <h1 className="text-[2rem] sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-8">
-                <span className="text-foreground">Post Everywhere.</span> <br />
-                <span className="bg-gradient-to-r from-primary via-violet-500 to-sky-500 bg-clip-text text-transparent">
+            <AnimatedSection animation="fade-up" delay={200} className="mb-6">
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl xl:text-8xl font-bold tracking-tight leading-[1.05]">
+                <span className="text-foreground">Post Everywhere.</span>
+                <br />
+                <span className="bg-gradient-to-r from-primary via-primary to-violet-500 bg-clip-text text-transparent">
                   Automate Everything.
                 </span>
               </h1>
             </AnimatedSection>
 
             {/* Subheading */}
-            <AnimatedSection animation="fade-up" delay={300}>
-              <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4">
-                The all-in-one platform for creators and agencies. Schedule, publish, and track 10+ social channels from one unified dashboard.
+            <AnimatedSection animation="fade-up" delay={300} className="mb-10">
+              <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                Schedule, publish, and analyze across 10+ social channels. Built for creators and agencies who want to grow without the chaos.
               </p>
             </AnimatedSection>
 
             {/* Hero CTAs */}
-            <AnimatedSection animation="fade-up" delay={400} className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+            <AnimatedSection animation="fade-up" delay={400} className="mb-12 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href="/signup"
-                className="group relative inline-flex items-center justify-center gap-2 rounded-full bg-primary px-10 py-4 text-base font-bold text-white transition-all hover:bg-black active:scale-[0.97] shadow-xl hover:shadow-primary/25 w-full sm:w-auto overflow-hidden text-center"
+                className="inline-flex items-center gap-2 rounded-full bg-primary text-white px-8 py-3.5 text-sm font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 w-full sm:w-auto justify-center"
               >
-                <span className="relative z-10 flex items-center gap-2">
-                  Get Started for Free <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                Get started free <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/how-it-works"
-                className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white/50 dark:bg-black/50 backdrop-blur-md px-10 py-4 text-base font-bold text-foreground hover:bg-muted/80 transition-all w-full sm:w-auto justify-center"
+                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-6 py-3.5"
               >
-                <Play className="h-4 w-4 fill-foreground" /> See How it Works
+                <Play className="h-4 w-4 fill-current" /> Watch demo
               </Link>
             </AnimatedSection>
 
-            {/* Social Proof Line */}
-            <AnimatedSection animation="fade-up" delay={500} className="pt-8">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                <div className="flex -space-x-3">
+            {/* Trust row */}
+            <AnimatedSection animation="fade-up" delay={500} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center sm:gap-8 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2.5">
+                <div className="flex -space-x-2">
                   {[
                     { initials: "SC", bg: "bg-pink-500" },
                     { initials: "MW", bg: "bg-violet-500" },
                     { initials: "PP", bg: "bg-emerald-500" },
-                    { initials: "JL", bg: "bg-sky-500" },
-                    { initials: "AR", bg: "bg-amber-500" },
                   ].map((a) => (
-                    <div key={a.initials} className={cn("h-10 w-10 rounded-full border-4 border-background flex items-center justify-center text-[10px] font-black text-white shadow-sm", a.bg)}>
+                    <div key={a.initials} className={cn("h-8 w-8 rounded-full border-2 border-background flex items-center justify-center text-[9px] font-black text-white", a.bg)}>
                       {a.initials}
                     </div>
                   ))}
-                  <div className="h-10 w-10 rounded-full border-4 border-background bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">
-                    +5K
-                  </div>
                 </div>
-                <div className="text-left">
-                  <div className="flex items-center gap-0.5 mb-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-sm font-bold text-muted-foreground whitespace-nowrap">
-                    Loved by <span className="text-foreground">5,000+</span> creators & agencies
-                  </p>
-                </div>
+                <span className="font-medium text-foreground/80">5,000+ teams love Onelinker</span>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 sm:border-l sm:border-border/40 sm:pl-8">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Free forever plan
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> No credit card
+                </span>
               </div>
             </AnimatedSection>
           </div>
 
-          {/* Interactive Mockup Container */}
-          <AnimatedSection animation="scale" delay={600} className="relative mt-20 lg:mt-32">
-            <div className="relative group">
-              {/* Floating Element 1 - Engagement Badge */}
-              <div className="absolute -top-10 -left-10 z-20 hidden lg:block animate-bounce-slow">
-                <div className="bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-border/50 rounded-2xl p-4 shadow-2xl">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                      <TrendingUp className="h-5 w-5 text-emerald-500" />
+          {/* Product Mockup - Full width with browser chrome */}
+          <AnimatedSection animation="scale" delay={600} className="relative w-full">
+            <div className="relative w-full max-w-6xl mx-auto">
+              {/* Browser chrome wrapper */}
+              <div className="rounded-[20px] border border-border/50 overflow-hidden shadow-[0_40px_120px_rgba(0,0,0,0.12)] bg-background">
+                {/* Browser top bar */}
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40 bg-muted/30">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-400/80" />
+                    <div className="w-3 h-3 rounded-full bg-amber-400/80" />
+                    <div className="w-3 h-3 rounded-full bg-emerald-400/80" />
+                  </div>
+                  <div className="flex-1 mx-4">
+                    <div className="flex items-center gap-2 bg-background/60 rounded-md px-3 py-1.5 max-w-sm mx-auto border border-border/30">
+                      <Zap className="w-3 h-3 text-muted-foreground/30" />
+                      <span className="text-[11px] text-muted-foreground/60">app.onelinker.ai/create</span>
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-muted-foreground uppercase">Engagement</p>
-                      <p className="text-lg font-black text-foreground">+42.8%</p>
-                    </div>
+                  </div>
+                </div>
+                {/* Mockup content */}
+                <UploadMockup />
+              </div>
+
+              {/* Floating stat badges */}
+              {/* Left badge */}
+              <div className="absolute -left-12 top-1/3 hidden lg:block z-20">
+                <div className="flex items-center gap-2 rounded-full border border-primary/40 bg-background/95 backdrop-blur-sm px-4 py-2.5 shadow-lg shadow-primary/10">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20">
+                    <Zap className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-primary uppercase">Scheduled</p>
+                    <p className="text-sm font-black text-foreground">47 posts</p>
                   </div>
                 </div>
               </div>
 
-              {/* Mockup */}
-              <UploadMockup />
+              {/* Right badge */}
+              <div className="absolute -right-12 top-1/2 hidden lg:block z-20">
+                <div className="flex items-center gap-2 rounded-full border border-primary/40 bg-background/95 backdrop-blur-sm px-4 py-2.5 shadow-lg shadow-primary/10">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-primary uppercase">Engagement</p>
+                    <p className="text-sm font-black text-foreground">+42.8%</p>
+                  </div>
+                </div>
+              </div>
 
+              {/* Bottom fade gradient */}
+              <div className="absolute -bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background via-background/50 to-transparent pointer-events-none" />
             </div>
-
-            {/* Backdrop Glow */}
-            <div className="absolute -inset-10 bg-primary/10 rounded-[40px] blur-[100px] -z-10 group-hover:bg-primary/15 transition-colors" />
           </AnimatedSection>
         </div>
       </section>
@@ -738,7 +760,7 @@ export default function LandingPage() {
           <div className="flex flex-col lg:flex-row items-end justify-between gap-10 mb-20">
             <AnimatedSection animation="fade-right" className="max-w-2xl text-left">
               <p className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-4">Features</p>
-              <h2 className="text-4xl sm:text-5xl font-medium text-foreground tracking-tight mb-6">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-foreground tracking-tight mb-6">
                 Everything You Need to <br />
                 <span className="text-muted-foreground/40">Grow Your Accounts.</span>
               </h2>
@@ -761,7 +783,7 @@ export default function LandingPage() {
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="group relative rounded-[2.5rem] border border-border/50 bg-card/60 p-8 hover:border-primary/20 hover:bg-card transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 overflow-hidden"
+                className="group relative rounded-[2.5rem] border border-border/50 bg-card/60 p-6 sm:p-8 hover:border-primary/20 hover:bg-card transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 overflow-hidden"
               >
                 {/* Decorative Background Icon */}
                 <f.icon className="absolute -top-6 -right-6 h-32 w-32 text-foreground/[0.03] rotate-12 transition-transform group-hover:rotate-0" />
@@ -790,7 +812,7 @@ export default function LandingPage() {
                 delay={i * 100} 
                 className="text-center space-y-4"
               >
-                <div className="inline-flex h-16 w-16 items-center justify-center rounded-[2rem] bg-muted/30 border border-border/40 text-primary mb-2 shadow-sm animate-float">
+                <div className="inline-flex h-16 w-16 items-center justify-center rounded-[2rem] bg-muted/30 border border-border/40 text-primary mb-2 shadow-sm">
                   <s.icon className="h-7 w-7" />
                 </div>
                 <div>
@@ -808,7 +830,7 @@ export default function LandingPage() {
       {/* ════════ DATA & ANALYTICS SECTION ════════ */}
       <section className="relative py-24 sm:py-32 bg-foreground/5 border-y border-border/30">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="grid lg:grid-cols-2 gap-20 items-center">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
             <div className="order-2 lg:order-1 relative">
               <AnalyticsMockup />
               <div className="absolute -inset-10 bg-primary/10 rounded-[30px] blur-[80px] -z-10" />
@@ -817,7 +839,7 @@ export default function LandingPage() {
             <div className="order-1 lg:order-2 space-y-10">
               <AnimatedSection animation="fade-left">
                 <p className="text-sm font-black text-primary uppercase tracking-[0.2em] mb-4">Analytics</p>
-                <h2 className="text-4xl sm:text-5xl font-medium text-foreground tracking-tight leading-[1.1]">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-foreground tracking-tight leading-[1.1]">
                   Data That Actually <br />
                   <span className="text-muted-foreground/40">Grows Your Brands.</span>
                 </h2>
@@ -874,7 +896,7 @@ export default function LandingPage() {
             {TESTIMONIALS.map((t) => (
               <div
                 key={t.name}
-                className="group relative rounded-[2.5rem] border border-border/50 bg-card/60 p-8 hover:bg-card transition-all duration-300"
+                className="group relative rounded-[2.5rem] border border-border/50 bg-card/60 p-6 sm:p-8 hover:bg-card transition-all duration-300"
               >
                 <div className="flex items-center gap-1 mb-8">
                   {[...Array(5)].map((_, i) => (
@@ -977,7 +999,7 @@ export default function LandingPage() {
       {/* ════════ FINAL CTA ════════ */}
       <section id="waitlist" className="relative pt-32 pb-48">
         <div className="max-w-7xl mx-auto px-6">
-          <AnimatedSection animation="scale" className="relative p-10 sm:p-20 rounded-[3rem] bg-foreground overflow-hidden shadow-2xl">
+          <AnimatedSection animation="scale" className="relative p-10 sm:p-20 rounded-2xl sm:rounded-[3rem] bg-primary overflow-hidden shadow-2xl">
             {/* Background Texture */}
             <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(circle_at_20%_30%,_rgba(255,255,255,0.1),_transparent)]" />
             <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-primary rounded-full blur-[100px] opacity-20" />
@@ -999,12 +1021,12 @@ export default function LandingPage() {
                 </Link>
                 <Link
                   href="/contact"
-                  className="text-lg font-black text-background/80 hover:text-background transition-colors px-6"
+                  className="text-lg font-black text-background/80 hover:text-background transition-colors px-6 py-3"
                 >
                   Contact Sales
                 </Link>
               </div>
-              <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 pt-4 border-t border-background/10">
+              <div className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-8 gap-y-4 pt-4 border-t border-background/10">
                 {["3 social channels", "No credit card", "Cancel anytime", "Full analytics"].map((feat) => (
                   <div key={feat} className="flex items-center gap-2 text-xs font-bold text-background/50 uppercase tracking-widest">
                     <CheckCircle2 className="h-4 w-4" /> {feat}

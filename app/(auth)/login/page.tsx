@@ -101,9 +101,16 @@ function LoginContent() {
     <AnimatedSection animation="fade-up" delay={100}>
       <div className="w-full max-w-[440px] space-y-8 bg-card/10 p-2 rounded-[2.5rem]">
         <div className="bg-background/40 backdrop-blur-2xl border border-border/10 rounded-[2.2rem] p-8 sm:p-10 shadow-2xl space-y-8">
+          {/* Logo/Branding */}
+          <div className="flex items-center justify-center mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70">
+              <span className="text-xl font-black text-white">O</span>
+            </div>
+          </div>
+
           {/* Header */}
-          <div className="space-y-3">
-            <h1 className="text-3xl sm:text-4xl font-medium text-foreground tracking-tight font-heading">
+          <div className="space-y-3 text-center">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
               Welcome back
             </h1>
             <p className="text-base text-muted-foreground font-medium">
@@ -214,7 +221,7 @@ function LoginContent() {
             {/* Submit */}
             <Button
               type="submit"
-              className="w-full h-13 bg-foreground text-background hover:bg-foreground/90 font-bold rounded-2xl text-base shadow-xl transition-all active:scale-[0.98] group"
+              className="w-full h-13 bg-primary text-white hover:bg-primary/90 font-bold rounded-2xl text-base shadow-lg shadow-primary/25 transition-all active:scale-[0.98] group"
               disabled={isSubmitting || isGoogleLoading || isRedirecting}
             >
               {isSubmitting || isRedirecting ? (

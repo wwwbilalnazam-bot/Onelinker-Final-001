@@ -135,7 +135,7 @@ export default function SettingsPage() {
           user_id: m.user_id,
           role:    m.role,
           name,
-          email:   m.user_id === currentUserId ? (currentUserEmail ?? "") : "",
+          email:   m.email ?? "",
           avatar:  name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
           joined:  new Date(m.invited_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
           deactivated: !!m.deactivated_at,
@@ -234,14 +234,27 @@ export default function SettingsPage() {
         setLogoUploading(false);
       }
 
-      const { error: updateError } = await supabase
-        .from("workspaces")
-        .update({ name: workspaceName, slug: workspaceSlug, logo_url: logoUrl })
-        .eq("id", workspace.id);
+      const body = {
+        workspaceId: workspace.id,
+        name: workspaceName,
+        logoUrl,
+        ...(outstandApiKey && { outstandApiKey }),
+      };
 
-      if (updateError) { toast.error(`Save failed: ${updateError.message}`); return; }
+      const updateRes = await fetch("/api/workspaces", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!updateRes.ok) {
+        const errData = await updateRes.json();
+        toast.error(errData.error ?? "Failed to update workspace");
+        return;
+      }
 
       toast.success("Workspace updated");
+      setOutstandApiKey("");
       await refreshWorkspace();
       router.refresh();
     } finally {
@@ -249,6 +262,10 @@ export default function SettingsPage() {
       setLogoUploading(false);
     }
   }
+
+  const [outstandApiKey, setOutstandApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [validatingKey, setValidatingKey] = useState(false);
 
   const [inviting, setInviting] = useState(false);
 
@@ -389,42 +406,65 @@ export default function SettingsPage() {
         return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Use API endpoint to transfer ownership (bypasses RLS)
+      const res = await fetch("/api/workspaces/transfer-ownership", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspace_id: workspace.id,
+          target_user_id: targetMember.user_id,
+        }),
+      });
 
-      // Update new owner
-      await supabase
-        .from("workspace_members")
-        .update({ role: "owner" })
-        .eq("workspace_id", workspace.id)
-        .eq("user_id", targetMember.user_id);
+      const apiData = await res.json();
 
-      // Demote current owner to manager
-      await supabase
-        .from("workspace_members")
-        .update({ role: "manager" })
-        .eq("workspace_id", workspace.id)
-        .eq("user_id", user.id);
-
-      // Update workspace owner_id
-      await supabase
-        .from("workspaces")
-        .update({ owner_id: targetMember.user_id })
-        .eq("id", workspace.id);
+      if (!res.ok) {
+        throw new Error(apiData.error || "Transfer failed");
+      }
 
       toast.success(`Ownership transferred to ${targetMember.name}`);
       setShowTransferDialog(false);
       setTransferEmail("");
       await refreshWorkspace();
-      fetchMembersAndInvites();
-    } catch {
-      toast.error("Transfer failed");
+      await fetchMembersAndInvites();
+      router.refresh();
+    } catch (err) {
+      console.error("[Transfer] Error:", err);
+      const errorMsg = err instanceof Error ? err.message : "Transfer failed";
+      toast.error(errorMsg);
     } finally {
       setIsTransferring(false);
     }
   }
 
   // ── Leave workspace ───────────────────────────────────────
+  async function validateOutstandKey() {
+    if (!outstandApiKey.trim()) {
+      toast.error("Please enter an API key first");
+      return;
+    }
+
+    if (!workspace?.id) return;
+
+    setValidatingKey(true);
+    try {
+      const res = await fetch(
+        `/api/outstand/validate-key?workspaceId=${workspace.id}`
+      );
+      const data = await res.json();
+
+      if (data.valid) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.error);
+      }
+    } catch (err) {
+      toast.error("Failed to validate API key");
+    } finally {
+      setValidatingKey(false);
+    }
+  }
+
   async function handleLeaveWorkspace() {
     if (!workspace?.id || isOwner) return;
 
@@ -619,6 +659,50 @@ export default function SettingsPage() {
                     onChange={(e) => setWorkspaceSlug(e.target.value)}
                     className="bg-background/50 flex-1"
                   />
+                </div>
+              </div>
+
+              {/* Outstand API Key */}
+              <div className="border-t border-border/40 pt-5 space-y-3">
+                <div>
+                  <Label htmlFor="outstand-api-key" className="text-sm font-medium mb-2 block">Outstand API Key</Label>
+                  <p className="text-xs text-muted-foreground mb-3">Enable social media posting via Outstand.so's hybrid API</p>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    id="outstand-api-key"
+                    type={showApiKey ? "text" : "password"}
+                    placeholder="post_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    value={outstandApiKey}
+                    onChange={(e) => setOutstandApiKey(e.target.value)}
+                    disabled={saving}
+                    className="bg-background/50 flex-1 font-mono text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showApiKey ? "Hide" : "Show"}
+                  </button>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Button
+                    onClick={validateOutstandKey}
+                    disabled={validatingKey || !outstandApiKey.trim()}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {validatingKey ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Validating...
+                      </>
+                    ) : (
+                      "Test Connection"
+                    )}
+                  </Button>
                 </div>
               </div>
 

@@ -296,8 +296,7 @@ export default function HowItWorksPage() {
             >
             <div
               className={cn(
-                "grid lg:grid-cols-2 gap-10 lg:gap-16 items-center",
-                isEven && "lg:flex-row-reverse"
+                "grid lg:grid-cols-2 gap-10 lg:gap-16 items-center"
               )}
             >
               {/* Text side */}
@@ -348,7 +347,7 @@ export default function HowItWorksPage() {
             <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
               Why Onelinker
             </p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
               Built different, on purpose
             </h2>
             <p className="text-base text-muted-foreground mt-4 max-w-xl mx-auto">
@@ -380,7 +379,7 @@ export default function HowItWorksPage() {
         </div>
 
         <AnimatedSection animation="scale" className="relative max-w-3xl mx-auto px-5 py-24 text-center">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
             Ready to get started?
           </h2>
           <p className="text-base text-muted-foreground mt-4 max-w-lg mx-auto leading-relaxed">

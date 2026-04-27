@@ -97,8 +97,8 @@ function StatCard({ label, value, icon: Icon, color, trend }: {
         )}
       </div>
       <div>
-        <p className="text-2xl sm:text-3xl font-bold text-foreground tabular-nums tracking-tight">{value}</p>
-        <p className="text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wider">{label}</p>
+        <p className="text-lg font-bold text-foreground">{value}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
       </div>
     </div>
   );
@@ -257,13 +257,11 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight flex items-center gap-3">
-            <BarChart3 className="h-8 w-8 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2.5">
+            <BarChart3 className="h-6 w-6 text-primary" />
             Performance
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground max-w-2xl font-medium">
-            Analyze your content strategy and engagement across all social channels.
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">Analyze your content strategy and engagement across all social channels.</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3 bg-card/40 p-1.5 rounded-2xl border border-border/60">
@@ -393,7 +391,7 @@ export default function AnalyticsPage() {
                 <h3 className="text-xl font-bold text-foreground">Engagement Trends</h3>
                 <p className="text-xs text-muted-foreground mt-1">Daily analysis of your content performance</p>
               </div>
-              <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
                 <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-indigo-500 shadow-sm" />Reach</span>
                 <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-rose-500 shadow-sm" />Likes</span>
                 <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-full bg-sky-500 shadow-sm" />Comments</span>
@@ -458,7 +456,7 @@ export default function AnalyticsPage() {
             
             {/* Platform Distribution */}
             <div className="rounded-3xl border border-border/60 bg-card/40 p-6">
-              <h4 className="text-sm font-bold text-foreground mb-6 uppercase tracking-wider">Reach by Platform</h4>
+              <h4 className="text-sm font-bold text-foreground mb-6">Reach by Platform</h4>
               <div className="h-[220px]">
                 {platformData.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-xs font-medium">No platform data.</div>
@@ -491,7 +489,7 @@ export default function AnalyticsPage() {
 
             {/* Top Posts */}
             <div className="rounded-3xl border border-border/60 bg-card/40 p-6">
-              <h4 className="text-sm font-bold text-foreground mb-6 uppercase tracking-wider">Top Performing Content</h4>
+              <h4 className="text-sm font-bold text-foreground mb-6">Top Performing Content</h4>
               <div className="space-y-4">
                 {topPosts.slice(0, 4).map((post, i) => {
                   const platformColor = COLORS[post.platform.toLowerCase() as keyof typeof COLORS] || COLORS.all;

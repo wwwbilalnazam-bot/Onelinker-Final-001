@@ -1,8 +1,5 @@
-"use client";
-
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { AnimatedSection } from "@/components/ui/animated-section";
 import {
   ArrowRight, Rocket, Sparkles, Globe, Zap, Shield,
   BarChart3, Calendar, Bug, Wrench, Star,
@@ -115,7 +112,7 @@ export default function ChangelogPage() {
         </div>
 
         <div className="relative max-w-6xl mx-auto px-5 pt-16 sm:pt-24 pb-8">
-          <AnimatedSection animation="fade-up" delay={100}>
+          <div>
           <div className="text-center">
             <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
               Changelog
@@ -127,7 +124,7 @@ export default function ChangelogPage() {
               All the latest features, improvements, and bug fixes. We ship updates regularly to make your experience better.
             </p>
           </div>
-          </AnimatedSection>
+          </div>
         </div>
       </section>
 
@@ -139,7 +136,7 @@ export default function ChangelogPage() {
 
           <div className="space-y-12">
             {RELEASES.map((release, ri) => (
-              <AnimatedSection key={release.version} animation="fade-up" delay={ri * 80}>
+              <div key={release.version}>
               <div className="relative">
                 {/* Timeline dot */}
                 <div className="absolute left-0 top-0 hidden sm:flex">
@@ -193,7 +190,7 @@ export default function ChangelogPage() {
                   </div>
                 </div>
               </div>
-              </AnimatedSection>
+              </div>
             ))}
           </div>
         </div>
@@ -201,7 +198,7 @@ export default function ChangelogPage() {
 
       {/* CTA */}
       <section className="border-t border-border/30 bg-muted/10">
-        <AnimatedSection animation="fade-up" className="max-w-3xl mx-auto px-5 py-16 text-center">
+        <div className="max-w-3xl mx-auto px-5 py-16 text-center">
           <h2 className="text-xl font-extrabold text-foreground tracking-tight">
             Want to see these features in action?
           </h2>
@@ -214,7 +211,7 @@ export default function ChangelogPage() {
           >
             Get started free <ArrowRight className="h-4 w-4" />
           </Link>
-        </AnimatedSection>
+        </div>
       </section>
     </div>
   );

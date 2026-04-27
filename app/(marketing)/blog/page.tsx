@@ -346,7 +346,7 @@ export default function BlogPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-5">
             <Zap className="h-6 w-6 text-primary" />
           </div>
-          <h2 className="text-2xl font-extrabold text-foreground tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
             Stay ahead of the curve
           </h2>
           <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">

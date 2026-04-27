@@ -46,6 +46,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Fetch emails from auth.users for all members
+  const userIds = (members ?? []).map((m: any) => m.user_id);
+  const { data: { users: authUsers = [] } } = await service.auth.admin.listUsers();
+
+  const emailMap = new Map(authUsers.map((u: any) => [u.id, u.email]));
+
+  // Transform to include emails
+  const membersWithEmails = (members ?? []).map((m: any) => ({
+    ...m,
+    email: emailMap.get(m.user_id) || "",
+  }));
+
   // Fetch pending invitations
   const { data: invitations } = await service
     .from("invitations")
@@ -55,7 +67,7 @@ export async function GET(req: NextRequest) {
     .order("created_at", { ascending: false });
 
   return NextResponse.json({
-    members: members ?? [],
+    members: membersWithEmails,
     invitations: invitations ?? [],
     currentUserId: user.id,
     currentUserEmail: user.email,

@@ -116,12 +116,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH /api/workspaces — Update workspace name/logo (used by onboarding)
+// PATCH /api/workspaces — Update workspace name/logo/api-keys (used by onboarding)
 // Uses service client to bypass RLS for slug uniqueness check
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { workspaceId, name, logoUrl, userId: bodyUserId } = body;
+    const { workspaceId, name, logoUrl, outstandApiKey, userId: bodyUserId } = body;
 
     if (!workspaceId || !name || typeof name !== "string" || name.trim().length < 2) {
       return NextResponse.json(
@@ -185,12 +185,15 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Update workspace
-    const updatePayload: Record<string, string> = {
+    const updatePayload: Record<string, string | null> = {
       name: name.trim(),
       slug: finalSlug,
     };
     if (logoUrl) {
       updatePayload.logo_url = logoUrl;
+    }
+    if (outstandApiKey) {
+      updatePayload.outstand_api_key = outstandApiKey;
     }
 
     const { error: updateError } = await service

@@ -181,84 +181,102 @@ export default function InboxPage() {
   useEffect(() => {
     if (!workspace?.id) return;
 
+    let mounted = true;
+    const subscriptions: any[] = [];
+
     const setupSubscriptions = async () => {
       const supabase = await createClient();
 
-      // Subscribe to inbox_messages (comments) INSERT and UPDATE events
-      const commentsChannel = supabase
-        .channel(`inbox-comments-${workspace.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'inbox_messages',
-            filter: `workspace_id=eq.${workspace.id}`,
-          },
-          (payload) => {
-            console.log('[real-time] New comment:', payload.new);
-            setMessages((prev) => [payload.new as Message, ...prev]);
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'inbox_messages',
-            filter: `workspace_id=eq.${workspace.id}`,
-          },
-          (payload) => {
-            console.log('[real-time] Comment updated:', payload.new);
-            setMessages((prev) =>
-              prev.map((m) => (m.id === payload.new.id ? { ...payload.new as Message, message_type: 'comment' } : m))
-            );
-          }
-        )
-        .subscribe();
+      try {
+        // Unsubscribe from any existing channels first
+        await supabase.removeAllChannels();
 
-      // Subscribe to messages (DMs) INSERT and UPDATE events
-      const dmsChannel = supabase
-        .channel(`inbox-dms-${workspace.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `workspace_id=eq.${workspace.id}`,
-          },
-          (payload) => {
-            console.log('[real-time] New DM:', payload.new);
-            setMessages((prev) => [{ ...payload.new, message_type: 'message' } as Message, ...prev]);
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'messages',
-            filter: `workspace_id=eq.${workspace.id}`,
-          },
-          (payload) => {
-            console.log('[real-time] DM updated:', payload.new);
-            setMessages((prev) =>
-              prev.map((m) => (m.id === payload.new.id ? { ...payload.new as Message, message_type: 'message' } : m))
-            );
-          }
-        )
-        .subscribe();
+        // Subscribe to inbox_messages (comments) INSERT and UPDATE events
+        const commentsChannel = supabase
+          .channel(`inbox-comments-${workspace.id}`, { realtime: { broadcast: { ack: true } } })
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'inbox_messages',
+              filter: `workspace_id=eq.${workspace.id}`,
+            },
+            (payload) => {
+              if (!mounted) return;
+              console.log('[real-time] New comment:', payload.new);
+              setMessages((prev) => [payload.new as Message, ...prev]);
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'inbox_messages',
+              filter: `workspace_id=eq.${workspace.id}`,
+            },
+            (payload) => {
+              if (!mounted) return;
+              console.log('[real-time] Comment updated:', payload.new);
+              setMessages((prev) =>
+                prev.map((m) => (m.id === payload.new.id ? { ...payload.new as Message, message_type: 'comment' } : m))
+              );
+            }
+          );
 
-      return () => {
-        commentsChannel.unsubscribe();
-        dmsChannel.unsubscribe();
-      };
+        subscriptions.push(commentsChannel);
+
+        // Subscribe to messages (DMs) INSERT and UPDATE events
+        const dmsChannel = supabase
+          .channel(`inbox-dms-${workspace.id}`, { realtime: { broadcast: { ack: true } } })
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'messages',
+              filter: `workspace_id=eq.${workspace.id}`,
+            },
+            (payload) => {
+              if (!mounted) return;
+              console.log('[real-time] New DM:', payload.new);
+              setMessages((prev) => [{ ...payload.new, message_type: 'message' } as Message, ...prev]);
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'messages',
+              filter: `workspace_id=eq.${workspace.id}`,
+            },
+            (payload) => {
+              if (!mounted) return;
+              console.log('[real-time] DM updated:', payload.new);
+              setMessages((prev) =>
+                prev.map((m) => (m.id === payload.new.id ? { ...payload.new as Message, message_type: 'message' } : m))
+              );
+            }
+          );
+
+        subscriptions.push(dmsChannel);
+
+        // Subscribe all channels at once
+        await Promise.all([commentsChannel.subscribe(), dmsChannel.subscribe()]);
+      } catch (error) {
+        console.error('[real-time] Setup error:', error);
+      }
     };
 
-    const unsubscribe = setupSubscriptions();
+    setupSubscriptions();
+
     return () => {
-      unsubscribe.then((fn) => fn?.());
+      mounted = false;
+      subscriptions.forEach((channel) => {
+        channel?.unsubscribe();
+      });
     };
   }, [workspace?.id]);
 

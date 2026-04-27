@@ -208,153 +208,195 @@ export default function PostDetailsPage() {
   const totalShares = metrics.reduce((sum: number, m: any) => sum + (m.shares || 0), 0);
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in duration-500">
-      
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <button
-          onClick={() => router.back()}
-          className="group flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-          Back to Posts
-        </button>
-        <div className="flex items-center gap-2">
-          {(post.status === PostStatus.Draft || post.status === PostStatus.Scheduled) && (
-            <Link href={`/create?edit=${id}`}>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Edit2 className="h-4 w-4" /> Edit Post
-              </Button>
-            </Link>
-          )}
-          <Button
-            variant="destructive"
-            size="sm"
-            className="gap-2"
-            onClick={handleDelete}
-            disabled={deleting}
+    <div className="min-h-screen bg-background page-enter">
+      {/* Header with Actions */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <button
+            onClick={() => router.back()}
+            className="group flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-            Delete
-          </Button>
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            Back to Posts
+          </button>
+          <div className="flex items-center gap-2">
+            {(post.status === PostStatus.Draft || post.status === PostStatus.Scheduled) && (
+              <Link href={`/create?edit=${id}`}>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Edit2 className="h-4 w-4" /> Edit Post
+                </Button>
+              </Link>
+            )}
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-2"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Delete
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column: Post Content & Media */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          <div className="rounded-3xl border border-border/50 bg-card overflow-hidden shadow-sm">
-            {/* Post Content */}
-            <div className="p-6 sm:p-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Media Preview Section */}
+        {post.media_urls && post.media_urls.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold text-foreground">Post Media</h2>
+            <div className={cn(
+              "grid gap-4",
+              post.media_urls.length === 1 ? "grid-cols-1" :
+              post.media_urls.length === 2 ? "grid-cols-1 md:grid-cols-2" :
+              "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            )}>
+              {post.media_urls.map((url: string, index: number) => {
+                const isVideo = /\.(mp4|mov|webm)(\?.*)?$/i.test(url) || url.includes("youtube.com") || url.includes("youtu.be");
+                const isYouTube = url.includes("youtube.com") || url.includes("youtu.be");
+                let thumb = url;
+                if (isYouTube) {
+                  const videoId = url.includes("youtu.be")
+                    ? url.split("/").pop()?.split("?")[0]
+                    : new URL(url).searchParams.get("v");
+                  thumb = videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : url;
+                }
+                return (
+                  <div key={index} className="group relative rounded-2xl border border-border/40 overflow-hidden bg-black/5 shadow-sm hover:shadow-md transition-all duration-300">
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="block">
+                      <div className="relative aspect-video w-full overflow-hidden">
+                        <Image
+                          src={thumb}
+                          alt={`Post Media ${index + 1}`}
+                          fill
+                          className="object-cover group-hover:scale-110 transition-transform duration-500"
+                          priority={index === 0}
+                        />
+                        {isVideo && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                            <div className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/40 group-hover:scale-110 transition-transform">
+                              <Play className="h-8 w-8 text-white fill-white ml-1" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </a>
+                    <div className="absolute top-3 left-3 flex items-center gap-1 bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 text-xs font-medium text-white">
+                      {isVideo ? (
+                        <>
+                          <Play className="h-3 w-3 fill-current" />
+                          Video
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-3 w-3" />
+                          Image
+                        </>
+                      )}
+                    </div>
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white/30">
+                      <ExternalLink className="h-4 w-4 text-white" />
+                    </a>
+                    {post.media_urls.length > 1 && (
+                      <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md rounded-full px-2.5 py-1 text-xs font-bold text-white">
+                        {index + 1}/{post.media_urls.length}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column: Post Content & Details */}
+          <div className="lg:col-span-2 space-y-6">
+
+          {/* Post Details Card */}
+          <div className="rounded-2xl border border-border/40 bg-card p-6 sm:p-8 space-y-6 shadow-sm">
+
+            {/* Status & Meta */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/40">
               <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold", cfg.bg, cfg.color)}>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold", cfg.bg, cfg.color)}>
                     <cfg.icon className="h-3.5 w-3.5" />
                     {cfg.label}
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    Created on {new Date(post.created_at).toLocaleDateString()}
+                  <span className="text-xs text-muted-foreground px-3 py-1.5 bg-muted/40 rounded-full">
+                    Created {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 </div>
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-                  {post.title || "Post Content"}
-                </h1>
+                {date && (
+                  <p className="text-xs text-muted-foreground">
+                    {post.status === PostStatus.Published ? 'Published' : 'Scheduled'}: {formatFullDate(date)}
+                  </p>
+                )}
               </div>
+            </div>
 
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+            {/* Title */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Post Title</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+                {post.title || "Untitled Post"}
+              </h1>
+            </div>
+
+            {/* Content/Caption */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Caption & Description</p>
+              <div className="bg-muted/20 rounded-xl border border-border/40 p-4">
                 <p className="text-base leading-relaxed text-foreground/90 whitespace-pre-wrap">
                   {post.content || <span className="italic text-muted-foreground">No caption content.</span>}
                 </p>
               </div>
+            </div>
 
-              {/* Per-Platform Overrides */}
-              {post.channel_content && Object.keys(post.channel_content).length > 0 && (
-                <div className="mt-8 space-y-4">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Platform Overrides</h2>
-                  <div className="space-y-4">
+            {/* Per-Platform Overrides */}
+            {post.channel_content && Object.keys(post.channel_content).length > 0 && (
+              <div className="space-y-4 pt-6 border-t border-border/40">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Platform-Specific Content</p>
+                  <div className="space-y-3">
                     {Object.entries(post.channel_content as Record<string, string>).map(([platform, content]) => {
                       const Icon = PLATFORM_ICONS[platform] || Globe;
                       return (
-                        <div key={platform} className="p-4 rounded-2xl bg-muted/20 border border-border/30 space-y-2">
-                          <div className="flex items-center gap-2 text-xs font-bold text-foreground/70">
-                            <Icon className="h-3.5 w-3.5" />
+                        <div key={platform} className="p-4 rounded-xl bg-muted/30 border border-border/40 space-y-2 hover:bg-muted/40 transition-colors">
+                          <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                            <Icon className="h-4 w-4" />
                             {PLATFORM_LABELS[platform] || platform}
                           </div>
-                          <p className="text-sm text-foreground/90 whitespace-pre-wrap">{content}</p>
+                          <p className="text-sm text-foreground/80 whitespace-pre-wrap">{content}</p>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-              )}
-
-              {post.first_comment && (
-                <div className="mt-6 p-4 rounded-2xl bg-muted/30 border border-border/40">
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">First Comment</p>
-                  <p className="text-sm text-foreground/80">{post.first_comment}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Media Gallery */}
-            {post.media_urls && post.media_urls.length > 0 && (
-              <div className="border-t border-border/40 bg-muted/10 p-6 sm:p-8">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Attached Media</h2>
-                <div className={cn(
-                  "grid gap-4",
-                  post.media_urls.length === 1 ? "grid-cols-1" : "grid-cols-2"
-                )}>
-                  {post.media_urls.map((url: string, index: number) => {
-                    const isVideo = /\.(mp4|mov|webm)(\?.*)?$/i.test(url) || url.includes("youtube.com") || url.includes("youtu.be");
-                    const isYouTube = url.includes("youtube.com") || url.includes("youtu.be");
-                    
-                    let thumb = url;
-                    if (isYouTube) {
-                      const videoId = url.includes("youtu.be") 
-                        ? url.split("/").pop()?.split("?")[0] 
-                        : new URL(url).searchParams.get("v");
-                      thumb = videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : url;
-                    }
-
-                    return (
-                      <div key={index} className="relative group aspect-video rounded-2xl border border-border/40 overflow-hidden bg-black/5">
-                        <Image
-                          src={thumb}
-                          alt={`Post Media ${index + 1}`}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        {isVideo && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                            <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                              <Play className="h-6 w-6 text-white fill-white ml-0.5" />
-                            </div>
-                          </div>
-                        )}
-                        <a 
-                          href={url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="absolute top-3 right-3 h-8 w-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <ExternalLink className="h-4 w-4 text-white" />
-                        </a>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             )}
 
+            {/* First Comment */}
+            {post.first_comment && (
+              <div className="space-y-2 pt-6 border-t border-border/40">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Auto First Comment</p>
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+                  <p className="text-sm text-foreground/80 whitespace-pre-wrap">{post.first_comment}</p>
+                </div>
+              </div>
+            )}
+            </div>
+
             {/* Comments Section */}
             {!loading && (
-              <div className="border-t border-border/40 bg-muted/10 p-6 sm:p-8">
+              <div className="border-t border-border/40 pt-6 mt-6">
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-1">Platform Comments</h2>
-                    <p className="text-xs text-muted-foreground">{comments.length} comment{comments.length !== 1 ? 's' : ''}</p>
+                    <h2 className="text-lg font-bold text-foreground mb-1">Platform Comments & Engagement</h2>
+                    <p className="text-sm text-muted-foreground">{comments.length} comment{comments.length !== 1 ? 's' : ''} from your social posts</p>
                   </div>
 
                   <div className="space-y-4">
@@ -581,68 +623,94 @@ export default function PostDetailsPage() {
         </div>
 
         {/* Right Column: Settings & Metrics */}
-        <div className="space-y-6">
-          
+        <aside className="space-y-6">
+
+          {/* Quick Stats Card */}
+          {metrics.length > 0 && (
+            <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6 space-y-4 shadow-sm">
+              <h3 className="text-sm font-bold text-foreground">Performance</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Total Reach</p>
+                  <p className="text-2xl font-bold text-primary">{totalReach.toLocaleString()}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Engagement</p>
+                  <p className="text-2xl font-bold text-emerald-600">{(totalLikes + totalComments).toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/40">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Likes</p>
+                  <p className="text-lg font-semibold">{totalLikes.toLocaleString()}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Comments</p>
+                  <p className="text-lg font-semibold">{totalComments.toLocaleString()}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Shares</p>
+                  <p className="text-lg font-semibold">{totalShares.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Post Details Card */}
-          <div className="rounded-3xl border border-border/50 bg-card p-6 space-y-6 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Post Details</h2>
-            
+          <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4 shadow-sm">
+            <h3 className="text-sm font-bold text-foreground">Post Information</h3>
+
             <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="mt-1 h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              {/* Scheduling Info */}
+              <div className="space-y-2 pb-4 border-b border-border/40">
+                <p className="text-xs text-muted-foreground font-semibold">Date & Time</p>
+                <div className="flex items-center gap-2 text-sm text-foreground">
                   <Calendar className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Scheduled Date</p>
-                  <p className="text-sm font-semibold">{formatFullDate(post.scheduled_at)}</p>
+                  <span>{formatFullDate(date)}</span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="mt-1 h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Status</p>
-                  <p className="text-sm font-semibold capitalize">{post.status}</p>
+              {/* Status */}
+              <div className="space-y-2 pb-4 border-b border-border/40">
+                <p className="text-xs text-muted-foreground font-semibold">Status</p>
+                <div className="flex items-center gap-2">
+                  <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold", cfg.bg, cfg.color)}>
+                    <cfg.icon className="h-3 w-3" />
+                    {cfg.label}
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="mt-1 h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
-                  <Globe className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground font-medium mb-1.5">Platforms</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {post.platforms.map((p: string) => {
-                      const Icon = PLATFORM_ICONS[p] || Globe;
-                      return (
-                        <span key={p} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-[10px] font-bold text-foreground">
-                          <Icon className="h-3 w-3" />
-                          {PLATFORM_LABELS[p] || p}
-                        </span>
-                      );
-                    })}
-                  </div>
+              {/* Platforms */}
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-semibold">Published To</p>
+                <div className="flex flex-wrap gap-2">
+                  {post.platforms.map((p: string) => {
+                    const Icon = PLATFORM_ICONS[p] || Globe;
+                    return (
+                      <div key={p} className="inline-flex items-center gap-1.5 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors">
+                        <Icon className="h-3.5 w-3.5" />
+                        {PLATFORM_LABELS[p] || p}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
 
 
-          {/* Social Preview Placeholder */}
-          <div className="rounded-3xl border border-dashed border-border/60 bg-muted/5 p-8 text-center space-y-4">
-            <div className="mx-auto h-12 w-12 rounded-2xl bg-muted/40 flex items-center justify-center">
-              <Share2 className="h-6 w-6 text-muted-foreground/40" />
+          {/* Error Message if any */}
+          {post.status === PostStatus.Failed && post.error_message && (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <AlertCircle className="h-4 w-4" />
+                <p className="text-sm font-semibold">Post Failed</p>
+              </div>
+              <p className="text-xs text-red-600/80 dark:text-red-400/80">{post.error_message}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-foreground/70">Social Preview</p>
-              <p className="text-[11px] text-muted-foreground px-4">Interactive previews coming soon for all platforms.</p>
-            </div>
-          </div>
-
-        </div>
+          )}
+        </aside>
       </div>
     </div>
   );

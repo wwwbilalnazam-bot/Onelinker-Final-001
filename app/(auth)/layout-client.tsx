@@ -17,13 +17,14 @@ export function AuthLayoutClient({
       <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-slate-100 flex flex-col lg:flex-row">
         {/* ── Left sidebar (desktop only) — Premium gradient background ── */}
         <div className="hidden lg:flex lg:w-[45%] shrink-0 relative overflow-hidden flex-col justify-between p-12">
-          {/* Gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900" />
+          {/* Gradient background using primary color */}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
 
-          {/* Animated background elements */}
+          {/* Animated background elements with primary color */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+            <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl opacity-20" style={{background: 'var(--color-primary)'}} />
+            <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full blur-3xl opacity-15" style={{background: 'var(--color-primary)'}} />
+            <div className="absolute top-1/2 left-1/3 w-80 h-80 rounded-full blur-3xl opacity-10" style={{background: 'var(--color-primary)'}} />
           </div>
 
           {/* Content */}
@@ -39,13 +40,11 @@ export function AuthLayoutClient({
             {/* Headline */}
             <div className="space-y-4">
               <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight">
-                Manage all your
+                Post Everywhere.
                 <br />
-                <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-purple-300 bg-clip-text text-transparent">
-                  social media
+                <span className="bg-gradient-to-r from-yellow-200 via-purple-200 to-blue-200 bg-clip-text text-transparent">
+                  Automate Everything.
                 </span>
-                <br />
-                in one place
               </h1>
               <p className="text-lg text-white/70 leading-relaxed max-w-md">
                 Schedule posts, create content with AI, and track analytics across 10+ platforms—all from one unified dashboard.
@@ -69,12 +68,12 @@ export function AuthLayoutClient({
             {/* Trust badges */}
             <div className="flex items-center gap-4 pt-4 border-t border-white/10">
               <div className="flex items-center gap-2 text-sm text-white/70">
-                <Shield className="h-4 w-4 text-purple-300" />
+                <Shield className="h-4 w-4" style={{color: 'hsl(var(--color-primary) / 0.8)'}} />
                 SOC 2 Certified
               </div>
               <div className="w-px h-4 bg-white/10" />
               <div className="flex items-center gap-2 text-sm text-white/70">
-                <Zap className="h-4 w-4 text-purple-300" />
+                <Zap className="h-4 w-4" style={{color: 'hsl(var(--color-primary) / 0.8)'}} />
                 Always protected
               </div>
             </div>

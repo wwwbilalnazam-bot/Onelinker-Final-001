@@ -58,7 +58,7 @@ export function AnimatedSection({
     <Tag
       ref={ref}
       className={cn(
-        "transition-all will-change-transform",
+        "transition-all",
         isVisible ? styles.visible : styles.hidden,
         className
       )}
@@ -98,7 +98,7 @@ export function StaggerChildren({
         <div
           key={i}
           className={cn(
-            "transition-all will-change-transform",
+            "transition-all",
             isVisible ? styles.visible : styles.hidden,
           )}
           style={{

@@ -91,17 +91,19 @@ export default function ContactPage() {
         </div>
 
         <div className="relative max-w-6xl mx-auto px-5 pt-16 sm:pt-24 pb-8">
-          <div className="text-center">
-            <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
-              Contact
-            </p>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground tracking-tight">
-              Get in touch
-            </h1>
-            <p className="text-base sm:text-lg text-muted-foreground mt-4 max-w-xl mx-auto leading-relaxed">
-              Have a question, need help, or want to partner with us? We&apos;d love to hear from you.
-            </p>
-          </div>
+          <AnimatedSection animation="fade-up" delay={100}>
+            <div className="text-center">
+              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
+                Contact
+              </p>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground tracking-tight">
+                Get in touch
+              </h1>
+              <p className="text-base sm:text-lg text-muted-foreground mt-4 max-w-xl mx-auto leading-relaxed">
+                Have a question, need help, or want to partner with us? We&apos;d love to hear from you.
+              </p>
+            </div>
+          </AnimatedSection>
         </div>
       </section>
 

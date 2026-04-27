@@ -57,7 +57,15 @@ function VerifyEmailContent() {
 
   return (
     <AnimatedSection animation="fade-up" delay={100}>
-    <div className="w-full max-w-[420px] space-y-6">
+    <div className="w-full max-w-[420px] space-y-8">
+      {/* Logo/Branding */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70">
+          <span className="text-lg font-black text-white">O</span>
+        </div>
+        <span className="text-lg font-bold text-foreground">Onelinker</span>
+      </div>
+
       {/* Animated icon */}
       <div className="relative w-fit">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5 border border-primary/10">
@@ -70,7 +78,7 @@ function VerifyEmailContent() {
 
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
           Verify your email
         </h1>
         <p className="text-sm text-muted-foreground leading-relaxed">
@@ -125,7 +133,7 @@ function VerifyEmailContent() {
         {emailProvider && (
           <a href={emailProvider.url} target="_blank" rel="noopener noreferrer">
             <Button
-              className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-sm shadow-glow-sm hover:shadow-glow transition-all"
+              className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-sm shadow-lg shadow-primary/25 transition-all"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               {emailProvider.name}

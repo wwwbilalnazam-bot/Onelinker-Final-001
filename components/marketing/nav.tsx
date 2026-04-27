@@ -61,7 +61,7 @@ export function Navbar() {
       className={cn(
         "fixed top-0 inset-x-0 z-[100] transition-all duration-300 border-b",
         scrolled
-          ? "bg-white/80 dark:bg-black/80 backdrop-blur-xl border-border/50 py-2 sm:py-3 shadow-lg shadow-black/[0.03]"
+          ? "bg-gradient-to-br from-primary/5 via-background to-violet-500/5 dark:from-primary/10 dark:via-background dark:to-violet-500/10 backdrop-blur-xl border-border/30 py-2 sm:py-3 shadow-lg shadow-primary/[0.05]"
           : "bg-transparent border-transparent py-3 sm:py-5"
       )}
     >
@@ -146,29 +146,11 @@ export function Navbar() {
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
           >
-            <AnimatePresence mode="wait" initial={false}>
-              {mobileOpen ? (
-                <motion.div
-                  key="close"
-                  initial={{ opacity: 0, rotate: -90 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={{ opacity: 0, rotate: 90 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <X className="h-4 w-4" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="menu"
-                  initial={{ opacity: 0, rotate: 90 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={{ opacity: 0, rotate: -90 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Menu className="h-4 w-4" />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {mobileOpen ? (
+              <X className="h-4 w-4" />
+            ) : (
+              <Menu className="h-4 w-4" />
+            )}
           </button>
         </div>
       </nav>
@@ -202,22 +184,16 @@ export function Navbar() {
                 <div className="space-y-4">
                   <p className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.2em] px-1">Navigation</p>
                   <div className="grid gap-2">
-                    {NAV_LINKS.map((link, i) => (
-                      <motion.div
+                    {NAV_LINKS.map((link) => (
+                      <Link
                         key={link.href}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 + i * 0.05 }}
+                        href={link.href}
+                        onClick={() => handleNavClick(link.href)}
+                        className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 hover:bg-muted/50 border border-border/20 transition-all active:scale-[0.98] group"
                       >
-                        <Link
-                          href={link.href}
-                          onClick={() => handleNavClick(link.href)}
-                          className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 hover:bg-muted/50 border border-border/20 transition-all active:scale-[0.98] group"
-                        >
-                          <span className="text-lg font-bold text-foreground">{link.label}</span>
-                          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-                        </Link>
-                      </motion.div>
+                        <span className="text-lg font-bold text-foreground">{link.label}</span>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -231,22 +207,16 @@ export function Navbar() {
                       { label: "Documentation", href: "#" },
                       { label: "Support", href: "/contact" },
                       { label: "Community Blog", href: "/blog" },
-                    ].map((res, i) => (
-                      <motion.div
+                    ].map((res) => (
+                      <Link
                         key={res.label}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5 + i * 0.05 }}
+                        href={res.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 px-1 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        <Link
-                          href={res.href}
-                          onClick={() => setMobileOpen(false)}
-                          className="flex items-center gap-3 px-1 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <ArrowUpRight className="h-4 w-4" />
-                          {res.label}
-                        </Link>
-                      </motion.div>
+                        <ArrowUpRight className="h-4 w-4" />
+                        {res.label}
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -254,13 +224,8 @@ export function Navbar() {
             </div>
 
             {/* Sticky/Fixed Footer CTA */}
-            <motion.div 
-              initial={{ y: 100 }}
-              animate={{ y: 0 }}
-              exit={{ y: 100 }}
-              transition={{ duration: 0.4, type: "spring", damping: 25 }}
-              className="mt-auto p-6 sm:p-8 bg-gradient-to-t from-white via-white/95 to-transparent dark:from-black dark:via-black/95 shrink-0"
-            >
+            <div className="mt-auto p-6 sm:p-8 bg-gradient-to-t from-white via-white/95 to-transparent dark:from-black dark:via-black/95 shrink-0">
+
               <div className="max-w-md mx-auto space-y-3">
                 <Link
                   href="/signup"
@@ -286,7 +251,7 @@ export function Navbar() {
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

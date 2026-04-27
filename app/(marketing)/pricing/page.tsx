@@ -272,8 +272,6 @@ export default function PricingPage() {
                   "relative rounded-2xl border p-6 flex flex-col transition-all duration-200",
                   plan.highlighted
                     ? "border-primary/40 bg-card/80 shadow-lg shadow-primary/5 md:scale-[1.03] z-10"
-                    : plan.name === "Agency"
-                    ? "border-purple-500/20 bg-card/60 hover:border-purple-500/40"
                     : "border-border/50 bg-card/60 hover:border-border"
                 )}
               >
@@ -283,7 +281,7 @@ export default function PricingPage() {
                     <span
                       className={cn(
                         "inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold text-white shadow-glow-sm",
-                        plan.name === "Agency" ? "bg-purple-600" : "bg-primary"
+                        "bg-primary"
                       )}
                     >
                       <Star className="h-3 w-3 fill-white" /> {plan.badge}
@@ -332,7 +330,7 @@ export default function PricingPage() {
                     plan.highlighted
                       ? "bg-primary text-white hover:bg-primary/90 shadow-glow-sm hover:shadow-glow"
                       : plan.name === "Agency"
-                      ? "bg-purple-600 text-white hover:bg-purple-700 shadow-sm"
+                      ? "bg-primary text-white hover:bg-primary/90 shadow-glow-sm hover:shadow-glow"
                       : "border border-border/60 bg-muted/20 text-foreground hover:bg-muted/40"
                   )}
                 >

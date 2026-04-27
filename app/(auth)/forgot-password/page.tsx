@@ -65,6 +65,13 @@ export default function ForgotPasswordPage() {
       <AnimatedSection animation="fade-up" delay={100}>
         <div className="w-full max-w-[440px] space-y-8 bg-card/10 p-2 rounded-[2.5rem]">
           <div className="bg-background/40 backdrop-blur-2xl border border-border/10 rounded-[2.2rem] p-8 sm:p-10 shadow-2xl space-y-8">
+            {/* Logo/Branding */}
+            <div className="flex items-center justify-center mb-2">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70">
+                <span className="text-xl font-black text-white">O</span>
+              </div>
+            </div>
+
             {/* Success icon */}
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="relative">
@@ -112,7 +119,7 @@ export default function ForgotPasswordPage() {
             <div className="space-y-4 pt-2">
               {emailProvider && (
                 <a href={emailProvider.url} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button className="w-full h-13 rounded-2xl bg-foreground text-background hover:bg-foreground/90 font-bold text-base shadow-xl transition-all active:scale-[0.98]">
+                  <Button className="w-full h-13 rounded-2xl bg-primary text-white hover:bg-primary/90 font-bold text-base shadow-lg shadow-primary/25 transition-all active:scale-[0.98]">
                     <ExternalLink className="h-5 w-5 mr-2" />
                     {emailProvider.name}
                   </Button>
@@ -144,13 +151,20 @@ export default function ForgotPasswordPage() {
     <AnimatedSection animation="fade-up" delay={100}>
       <div className="w-full max-w-[440px] space-y-8 bg-card/10 p-2 rounded-[2.5rem]">
         <div className="bg-background/40 backdrop-blur-2xl border border-border/10 rounded-[2.2rem] p-8 sm:p-10 shadow-2xl space-y-8">
+          {/* Logo/Branding */}
+          <div className="flex items-center justify-center mb-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70">
+              <span className="text-xl font-black text-white">O</span>
+            </div>
+          </div>
+
           {/* Header */}
-          <div className="space-y-5">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-primary/5 border border-primary/10 shadow-inner">
+          <div className="space-y-3 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-primary/5 border border-primary/10 shadow-inner mx-auto">
               <KeyRound className="h-7 w-7 text-primary" />
             </div>
             <div className="space-y-3">
-              <h1 className="text-3xl sm:text-4xl font-medium text-foreground tracking-tight font-heading">
+              <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
                 Reset password
               </h1>
               <p className="text-base text-muted-foreground font-medium leading-relaxed">
@@ -186,7 +200,7 @@ export default function ForgotPasswordPage() {
 
             <Button
               type="submit"
-              className="w-full h-13 bg-foreground text-background hover:bg-foreground/90 font-bold rounded-2xl text-base shadow-xl transition-all active:scale-[0.98] group"
+              className="w-full h-13 bg-primary text-white hover:bg-primary/90 font-bold rounded-2xl text-base shadow-lg shadow-primary/25 transition-all active:scale-[0.98] group"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
