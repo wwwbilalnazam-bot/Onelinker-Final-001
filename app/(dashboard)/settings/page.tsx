@@ -2,9 +2,9 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
-  Building2, Users, Shield, Settings,
+  Building2, Users, Shield, Settings, Key,
   Trash2, Plus, Crown, LogOut, Upload,
-  AlertTriangle, Loader2, Clock, Mail, X,
+  AlertTriangle, Loader2, Clock, Mail, X, Eye, EyeOff, Copy, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,12 +16,13 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Plan } from "@/types";
 
-type SettingsTab = "profile" | "workspace" | "members" | "danger";
+type SettingsTab = "profile" | "workspace" | "members" | "api" | "danger";
 
 const TAB_CONFIG = [
   { id: "profile"   as const, label: "Profile",     icon: Users },
   { id: "workspace" as const, label: "Workspace",   icon: Building2 },
   { id: "members"   as const, label: "Members",     icon: Users },
+  { id: "api"       as const, label: "API Keys",    icon: Key },
   { id: "danger"    as const, label: "Danger Zone", icon: Shield },
 ];
 
@@ -86,12 +87,19 @@ export default function SettingsPage() {
   const [logoFile, setLogoFile]         = useState<File | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
 
+  // ── API Keys state ──────────────────────────────────────────
+  const [outstandApiKey, setOutstandApiKey] = useState("");
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [savingApiKey, setSavingApiKey] = useState(false);
+  const [copiedApiKey, setCopiedApiKey] = useState(false);
+
   // ── Load workspace data ────────────────────────────────────
   useEffect(() => {
     if (!workspace) return;
     setWorkspaceName(workspace.name ?? "");
     setWorkspaceSlug(workspace.slug ?? "");
     if (workspace.logo_url) setLogoPreview(workspace.logo_url);
+    if (workspace.outstand_api_key) setOutstandApiKey(workspace.outstand_api_key);
   }, [workspace]);
 
   // ── Load user profile data ──────────────────────────────────
@@ -253,8 +261,12 @@ export default function SettingsPage() {
         return;
       }
 
-      toast.success("Workspace updated");
-      setOutstandApiKey("");
+      if (outstandApiKey) {
+        toast.success("API key saved successfully!");
+      } else {
+        toast.success("Workspace updated");
+      }
+      if (outstandApiKey) setOutstandApiKey("");
       await refreshWorkspace();
       router.refresh();
     } finally {
@@ -262,10 +274,6 @@ export default function SettingsPage() {
       setLogoUploading(false);
     }
   }
-
-  const [outstandApiKey, setOutstandApiKey] = useState("");
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [validatingKey, setValidatingKey] = useState(false);
 
   const [inviting, setInviting] = useState(false);
 
@@ -849,6 +857,129 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* API KEYS */}
+          {tab === "api" && (
+            <div className="rounded-xl border border-border/60 bg-card/60 p-6 space-y-5">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">API Integrations</h2>
+                <p className="text-sm text-muted-foreground mt-1">Configure external API keys for advanced posting features.</p>
+              </div>
+
+              {/* Outstand API Key */}
+              <div className="border-t border-border/40 pt-5 space-y-3">
+                <div>
+                  <Label htmlFor="outstand-api-key" className="text-sm font-medium mb-2 block flex items-center gap-2">
+                    <Key className="h-4 w-4" />
+                    Outstand API Key
+                  </Label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Your Outstand.so API key enables direct posting to Facebook, Instagram, YouTube, and LinkedIn.
+                    <a href="https://outstand.so" target="_blank" rel="noopener" className="text-primary hover:underline ml-1">Get your key →</a>
+                  </p>
+                  <div className="relative">
+                    <Input
+                      id="outstand-api-key"
+                      type={showApiKey ? "text" : "password"}
+                      placeholder="ost_..."
+                      value={outstandApiKey}
+                      onChange={(e) => {
+                        setOutstandApiKey(e.target.value);
+                        setCopiedApiKey(false);
+                      }}
+                      disabled={savingApiKey}
+                      className="h-10 pr-20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                      aria-label={showApiKey ? "Hide" : "Show"}
+                    >
+                      {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                    {outstandApiKey && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(outstandApiKey);
+                          setCopiedApiKey(true);
+                          setTimeout(() => setCopiedApiKey(false), 2000);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                        aria-label="Copy"
+                      >
+                        {copiedApiKey ? (
+                          <Check className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Keys starting with "ost_" are recognized. Never share your API key.</p>
+                </div>
+
+                {/* Status indicator */}
+                {outstandApiKey && outstandApiKey.startsWith("ost_") && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <p className="text-sm text-green-700 dark:text-green-400">Valid API key format detected</p>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    onClick={saveWorkspace}
+                    disabled={savingApiKey || saving}
+                    className="gap-2 bg-primary text-white"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save API Key"
+                    )}
+                  </Button>
+                  {outstandApiKey && (
+                    <Button
+                      onClick={() => {
+                        setOutstandApiKey("");
+                        setShowApiKey(false);
+                        setCopiedApiKey(false);
+                      }}
+                      variant="ghost"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Info section */}
+              <div className="border-t border-border/40 pt-5 space-y-3">
+                <div>
+                  <h3 className="text-sm font-medium text-foreground mb-2">How it works</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1.5">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary font-bold mt-0.5">1.</span>
+                      <span>Add your Outstand API key above</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary font-bold mt-0.5">2.</span>
+                      <span>Connect your social accounts (same as before)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary font-bold mt-0.5">3.</span>
+                      <span>Posts will automatically use Outstand API with fallback to direct APIs</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* DANGER ZONE */}
           {tab === "danger" && (
