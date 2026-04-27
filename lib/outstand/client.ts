@@ -19,6 +19,11 @@ export class OutstandApiError extends Error {
   }
 }
 
+export interface OutstandPostResult {
+  postId: string;
+  status: "published" | "scheduled" | "pending";
+}
+
 // ── Environment helpers ─────────────────────────────────────
 
 export function getOutstandBaseUrl(): string {

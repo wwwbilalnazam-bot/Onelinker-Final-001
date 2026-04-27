@@ -1,8 +1,8 @@
 // ════════════════════════════════════════════════════════════
-// OUTSTAND.SO — TIKTOK OPERATIONS
+// OUTSTAND.SO — INSTAGRAM OPERATIONS
 //
-// Publishes videos to TikTok via Outstand.so API.
-// Used as fallback when direct TikTok API fails.
+// Publishes content to Instagram via Outstand.so API.
+// Used as fallback when direct Meta API fails.
 //
 // Assumes Outstand.so provides:
 //   POST /posts — Create/schedule posts
@@ -11,37 +11,33 @@
 
 import { outstandPost, outstandGet, OutstandApiError, OutstandPostResult } from "./client";
 
-export interface TikTokMetrics {
+export interface InstagramMetrics {
   likes: number;
   comments: number;
   shares: number;
-  views: number;
+  reach: number;
+  impressions: number;
+  clicks: number;
 }
 
 // ── Publish (immediate) ─────────────────────────────────────
 
-/**
- * Publish a TikTok video immediately via Outstand.so
- * The video file should already be uploaded to a public URL.
- */
-export async function publishTikTokViaOutstand(
+export async function publishInstagramViaOutstand(
   apiKey: string,
   accountId: string,
-  videoUrl: string,
-  caption: string
+  content: string,
+  mediaUrls?: string[],
+  format?: string
 ): Promise<OutstandPostResult> {
   try {
-    console.log("[outstand/tiktok] Publishing video to TikTok via Outstand");
+    console.log("[outstand/instagram] Publishing post to Instagram via Outstand");
 
     const payload = {
-      platform: "tiktok",
+      platform: "instagram",
       account_id: accountId,
-      video_url: videoUrl,
-      caption: caption,
-      // Outstand may support additional fields like:
-      // visibility: "public" | "private" | "friends",
-      // disable_comments: boolean,
-      // hashtags: string[],
+      caption: content,
+      media_urls: mediaUrls && mediaUrls.length > 0 ? mediaUrls : undefined,
+      format: format || "post",
     };
 
     const response = await outstandPost<{
@@ -54,7 +50,7 @@ export async function publishTikTokViaOutstand(
     }>("/posts", payload, apiKey);
 
     if (response.error?.code) {
-      console.error("[outstand/tiktok] Outstand error:", response.error.message);
+      console.error("[outstand/instagram] Outstand error:", response.error.message);
       throw new OutstandApiError(
         response.error.message,
         400,
@@ -73,7 +69,7 @@ export async function publishTikTokViaOutstand(
     }
 
     console.log(
-      `[outstand/tiktok] ✓ Published via Outstand: postId=${postId}, status=${status}`
+      `[outstand/instagram] ✓ Published via Outstand: postId=${postId}, status=${status}`
     );
 
     return {
@@ -82,32 +78,30 @@ export async function publishTikTokViaOutstand(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[outstand/tiktok] Publishing via Outstand failed:", message);
+    console.error("[outstand/instagram] Publishing via Outstand failed:", message);
     throw err;
   }
 }
 
 // ── Schedule ────────────────────────────────────────────────
 
-/**
- * Schedule a TikTok video via Outstand.so
- * scheduleAt should be an ISO 8601 datetime string.
- */
-export async function scheduleTikTokViaOutstand(
+export async function scheduleInstagramViaOutstand(
   apiKey: string,
   accountId: string,
-  videoUrl: string,
-  caption: string,
-  scheduleAt: string // ISO 8601
+  content: string,
+  scheduleAt: string,
+  mediaUrls?: string[],
+  format?: string
 ): Promise<OutstandPostResult> {
   try {
-    console.log("[outstand/tiktok] Scheduling video to TikTok via Outstand");
+    console.log("[outstand/instagram] Scheduling post to Instagram via Outstand");
 
     const payload = {
-      platform: "tiktok",
+      platform: "instagram",
       account_id: accountId,
-      video_url: videoUrl,
-      caption: caption,
+      caption: content,
+      media_urls: mediaUrls && mediaUrls.length > 0 ? mediaUrls : undefined,
+      format: format || "post",
       scheduled_at: scheduleAt,
     };
 
@@ -121,7 +115,7 @@ export async function scheduleTikTokViaOutstand(
     }>("/posts", payload, apiKey);
 
     if (response.error?.code) {
-      console.error("[outstand/tiktok] Outstand error:", response.error.message);
+      console.error("[outstand/instagram] Outstand error:", response.error.message);
       throw new OutstandApiError(
         response.error.message,
         400,
@@ -140,7 +134,7 @@ export async function scheduleTikTokViaOutstand(
     }
 
     console.log(
-      `[outstand/tiktok] ✓ Scheduled via Outstand: postId=${postId}, status=${status}, scheduleAt=${scheduleAt}`
+      `[outstand/instagram] ✓ Scheduled via Outstand: postId=${postId}, status=${status}, scheduleAt=${scheduleAt}`
     );
 
     return {
@@ -149,36 +143,34 @@ export async function scheduleTikTokViaOutstand(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[outstand/tiktok] Scheduling via Outstand failed:", message);
+    console.error("[outstand/instagram] Scheduling via Outstand failed:", message);
     throw err;
   }
 }
 
 // ── Analytics ───────────────────────────────────────────────
 
-/**
- * Fetch analytics for a TikTok post via Outstand.so
- */
-export async function getTikTokAnalyticsViaOutstand(
+export async function getInstagramAnalyticsViaOutstand(
   apiKey: string,
   postId: string
-): Promise<TikTokMetrics> {
+): Promise<InstagramMetrics> {
   try {
-    console.log("[outstand/tiktok] Fetching analytics for post:", postId);
+    console.log("[outstand/instagram] Fetching analytics for post:", postId);
 
     const response = await outstandGet<{
       data: {
         likes: number;
         comments: number;
         shares: number;
-        views: number;
-        // Outstand may return additional fields
+        reach: number;
+        impressions: number;
+        clicks: number;
       };
       error?: { code: string; message: string };
     }>(`/posts/${postId}/analytics`, undefined, apiKey);
 
     if (response.error?.code) {
-      console.error("[outstand/tiktok] Outstand error:", response.error.message);
+      console.error("[outstand/instagram] Outstand error:", response.error.message);
       throw new OutstandApiError(
         response.error.message,
         400,
@@ -190,20 +182,23 @@ export async function getTikTokAnalyticsViaOutstand(
       likes: 0,
       comments: 0,
       shares: 0,
-      views: 0,
+      reach: 0,
+      impressions: 0,
+      clicks: 0,
     };
 
-    console.log("[outstand/tiktok] ✓ Analytics retrieved:", analytics);
+    console.log("[outstand/instagram] ✓ Analytics retrieved:", analytics);
 
     return {
       likes: analytics.likes || 0,
       comments: analytics.comments || 0,
-      shares: analytics.shares || 0,
-      views: analytics.views || 0,
+      shares: 0,
+      reach: analytics.reach || 0,
+      impressions: analytics.impressions || 0,
+      clicks: 0,
     };
   } catch (err) {
-    console.error("[outstand/tiktok] Analytics fetch failed:", err);
-    // Return zeros on failure rather than throwing
-    return { likes: 0, comments: 0, shares: 0, views: 0 };
+    console.error("[outstand/instagram] Analytics fetch failed:", err);
+    return { likes: 0, comments: 0, shares: 0, reach: 0, impressions: 0, clicks: 0 };
   }
 }

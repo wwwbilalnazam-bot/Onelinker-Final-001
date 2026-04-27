@@ -19,8 +19,11 @@
 
 import type { SocialProvider } from "./types";
 import { MetaDirectProvider } from "./meta-direct";
+import { MetaHybridProvider } from "./meta-hybrid";
 import { YouTubeDirectProvider } from "./youtube-direct";
+import { YouTubeHybridProvider } from "./youtube-hybrid";
 import { LinkedInDirectProvider } from "./linkedin-direct";
+import { LinkedInHybridProvider } from "./linkedin-hybrid";
 import { TikTokDirectProvider } from "./tiktok-direct";
 import { TikTokHybridProvider } from "./tiktok-hybrid";
 import { TwitterDirectProvider } from "./twitter-direct";
@@ -33,8 +36,11 @@ import { GoogleBusinessDirectProvider } from "./google-business-direct";
 
 const PROVIDERS: Record<string, SocialProvider> = {
   "meta-direct": new MetaDirectProvider(),
+  "meta-hybrid": new MetaHybridProvider(),
   "youtube-direct": new YouTubeDirectProvider(),
+  "youtube-hybrid": new YouTubeHybridProvider(),
   "linkedin-direct": new LinkedInDirectProvider(),
+  "linkedin-hybrid": new LinkedInHybridProvider(),
   "tiktok-direct": new TikTokDirectProvider(),
   "tiktok-hybrid": new TikTokHybridProvider(),
   "twitter-direct": new TwitterDirectProvider(),
@@ -49,10 +55,10 @@ const PROVIDERS: Record<string, SocialProvider> = {
 // They'll show "coming soon" in the UI.
 
 const PLATFORM_PROVIDER_MAP: Record<string, string> = {
-  instagram:        "meta-direct",
-  facebook:         "meta-direct",
-  linkedin:         "linkedin-direct",
-  youtube:          "youtube-direct",
+  instagram:        "meta-hybrid",
+  facebook:         "meta-hybrid",
+  linkedin:         "linkedin-hybrid",
+  youtube:          "youtube-hybrid",
   tiktok:           "tiktok-hybrid",
   twitter:          "twitter-direct",
   threads:          "threads-direct",
