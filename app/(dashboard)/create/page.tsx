@@ -1625,7 +1625,7 @@ export default function ComposePage() {
   }
 
   // ─── Submit ───────────────────────────────────────────────────
-  async function handleSubmit() {
+  async function handleSubmit(overrideTiktokData?: TikTokShareData) {
     if (!selectedAccountIds.length) { toast.error("Select at least one account"); return; }
 
     const hasContent = perChannelMode
@@ -1749,7 +1749,8 @@ export default function ComposePage() {
 
       // ── Check if posting to TikTok and show modal if needed ──
       const hasTiktok = allSelectedPlatforms.includes("tiktok");
-      if (hasTiktok && !tiktokData && scheduleMode !== "draft") {
+      const effectiveTiktokData = overrideTiktokData || tiktokData;
+      if (hasTiktok && !effectiveTiktokData && scheduleMode !== "draft") {
         setPendingTiktokSubmit(true);
         setIsTikTokModalOpen(true);
         setIsSubmitting(false);
@@ -1777,7 +1778,7 @@ export default function ComposePage() {
           tags: ytTags.trim() ? ytTags.split(",").map(t => t.trim()).filter(Boolean) : undefined,
           madeForKids: ytMadeForKids,
         } : undefined,
-        tiktokConfig: hasTiktok ? tiktokData : undefined,
+        tiktokConfig: hasTiktok ? effectiveTiktokData : undefined,
         thumbnail: thumbnailForPublish.type !== "none" ? {
           type: thumbnailForPublish.type,
           frameOffset: thumbnailForPublish.frameOffset,
@@ -3445,10 +3446,8 @@ export default function ComposePage() {
           onSubmit={async (data) => {
             setTiktokData(data);
             setIsTikTokModalOpen(false);
-            // Re-trigger the submit with TikTok data
-            await new Promise(r => setTimeout(r, 100));
             setIsSubmitting(true);
-            await handleSubmit();
+            await handleSubmit(data);
           }}
           accountId={tiktokAccount.outstand_account_id || tiktokAccount.id}
           accessToken="" // Creator info fetch handles auth, modal doesn't need token
