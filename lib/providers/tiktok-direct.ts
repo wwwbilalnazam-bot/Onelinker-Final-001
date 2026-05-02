@@ -257,7 +257,8 @@ export class TikTokDirectProvider implements SocialProvider {
       tokenData.accessToken,
       videoBuffer,
       fileName,
-      payload.content
+      payload.content,
+      payload.tiktokConfig
     );
 
     if (postResult.status === "failed") {

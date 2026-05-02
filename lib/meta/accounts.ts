@@ -44,8 +44,10 @@ export interface MetaIGAccount {
 }
 
 // ── Facebook Login OAuth scopes ─────────────────────────────
-// These are the permissions your Meta app needs.
-// In development mode, only app roles (admin/developer/tester) can use them.
+// Only approved permissions from Meta App Review.
+// Approved: pages_show_list, pages_read_engagement, pages_manage_engagement,
+//           pages_manage_posts, pages_read_user_content,
+//           instagram_basic, instagram_content_publish
 
 const FACEBOOK_ONLY_SCOPES = [
   "pages_show_list",
@@ -53,16 +55,15 @@ const FACEBOOK_ONLY_SCOPES = [
   "pages_manage_engagement",
   "pages_manage_posts",
   "pages_read_user_content",
-  "business_management",
 ].join(",");
 
 const INSTAGRAM_SCOPES = [
   "pages_show_list",
   "pages_read_engagement",
+  "pages_manage_posts",
+  "pages_read_user_content",
   "instagram_basic",
   "instagram_content_publish",
-  "instagram_manage_comments",
-  "business_management",
 ].join(",");
 
 const ALL_META_SCOPES = [
@@ -73,8 +74,6 @@ const ALL_META_SCOPES = [
   "pages_read_user_content",
   "instagram_basic",
   "instagram_content_publish",
-  "instagram_manage_comments",
-  "business_management",
 ].join(",");
 
 // ── Helpers ─────────────────────────────────────────────────

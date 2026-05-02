@@ -69,6 +69,17 @@ export interface CreatePostPayload {
     tags?: string[];
     madeForKids?: boolean;
   };
+  /** TikTok-specific configuration */
+  tiktokConfig?: {
+    title?: string;
+    privacyStatus?: "SELF_ONLY" | "FRIEND_ONLY" | "PUBLIC";
+    allowComment?: boolean;
+    allowDuet?: boolean;
+    allowStitch?: boolean;
+    isCommercialContent?: boolean;
+    yourBrand?: boolean;
+    brandedContent?: boolean;
+  };
   /** Thumbnail data for video posts */
   thumbnail?: {
     type: "frame" | "custom";

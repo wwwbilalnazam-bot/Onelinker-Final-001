@@ -36,6 +36,16 @@ export async function POST(request: NextRequest) {
         tags?: string[];
         madeForKids?: boolean;
       };
+      tiktokConfig?: {
+        title?: string;
+        privacyStatus?: "SELF_ONLY" | "FRIEND_ONLY" | "PUBLIC";
+        allowComment?: boolean;
+        allowDuet?: boolean;
+        allowStitch?: boolean;
+        isCommercialContent?: boolean;
+        yourBrand?: boolean;
+        brandedContent?: boolean;
+      };
       thumbnail?: {
         type: "frame" | "custom";
         frameOffset?: number;
@@ -62,6 +72,7 @@ export async function POST(request: NextRequest) {
       platformFormats,
       youtubeTitle,
       youtubeConfig,
+      tiktokConfig,
       thumbnail,
       segments,
     } = body;
@@ -127,7 +138,7 @@ export async function POST(request: NextRequest) {
         channel_content: channelContent || null,
         account_content: accountContent || null,
         title: youtubeTitle || null,
-        options: (youtubeConfig || thumbnail) ? { youtubeConfig, thumbnail } : null,
+        options: (youtubeConfig || tiktokConfig || thumbnail) ? { youtubeConfig, tiktokConfig, thumbnail } : null,
       };
 
       const { data: post, error } = await serviceClient
@@ -218,6 +229,7 @@ export async function POST(request: NextRequest) {
             platforms,
             title: platforms.includes("youtube") ? youtubeTitle : undefined,
             youtubeConfig: platforms.includes("youtube") ? youtubeConfig : undefined,
+            tiktokConfig: platforms.includes("tiktok") ? tiktokConfig : undefined,
             thumbnail,
             segments: [seg as { start: number; end: number }],
           },
@@ -257,6 +269,7 @@ export async function POST(request: NextRequest) {
             platforms: [account.platform],
             title: account.platform === "youtube" ? youtubeTitle : undefined,
             youtubeConfig: account.platform === "youtube" ? youtubeConfig : undefined,
+            tiktokConfig: account.platform === "tiktok" ? tiktokConfig : undefined,
             thumbnail,
           },
           workspaceId,
@@ -303,6 +316,7 @@ export async function POST(request: NextRequest) {
             platforms: [platform],
             title: platform === "youtube" ? youtubeTitle : undefined,
             youtubeConfig: platform === "youtube" ? youtubeConfig : undefined,
+            tiktokConfig: platform === "tiktok" ? tiktokConfig : undefined,
             thumbnail,
           },
           workspaceId,
@@ -331,6 +345,7 @@ export async function POST(request: NextRequest) {
         platforms,
         title: platforms.includes("youtube") ? youtubeTitle : undefined,
         youtubeConfig: platforms.includes("youtube") ? youtubeConfig : undefined,
+        tiktokConfig: platforms.includes("tiktok") ? tiktokConfig : undefined,
         thumbnail,
         segments,
       },

@@ -24,7 +24,10 @@ import { VideoPlayer } from "@/components/compose/VideoPlayer";
 import { VideoTrimmer } from "@/components/compose/VideoTrimmer";
 import { ThumbnailPicker, EMPTY_THUMBNAIL, type ThumbnailData } from "@/components/compose/ThumbnailPicker";
 import { ComposeModal } from "@/components/compose/ComposeModal";
+import { TikTokShareModal } from "@/components/compose/TikTokShareModal";
+import { TikTokShareData } from "@/components/compose/TikTokShareForm";
 import { parseAspectRatio, detectAllPlatformFormats } from "@/lib/media/auto-format-detector";
+import { publishManager, type PublishPayload } from "@/lib/publishing/publish-manager";
 
 // ─── Platform definitions ────────────────────────────────────
 const PLATFORMS = [
@@ -890,6 +893,11 @@ export default function ComposePage() {
   // Loading state
   const [isLoadingPost, setIsLoadingPost]         = useState(false);
 
+  // TikTok modal state
+  const [isTikTokModalOpen, setIsTikTokModalOpen] = useState(false);
+  const [tiktokData, setTiktokData]               = useState<TikTokShareData | null>(null);
+  const [pendingTiktokSubmit, setPendingTiktokSubmit] = useState(false);
+
   // Hook for query params
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1044,6 +1052,16 @@ export default function ComposePage() {
     };
   }, [content, channelContent, autoSaveDraft, isSubmitting]);
 
+  // ─── Auto-fill YouTube title from content ───────────────────
+  useEffect(() => {
+    if (youtubeSelected && !youtubeTitle.trim() && content.trim()) {
+      // Use first line of content as title, max 100 chars
+      const firstLine = content.split("\n")[0] || content;
+      const title = firstLine.substring(0, 100);
+      setYoutubeTitle(title);
+    }
+  }, [youtubeSelected, content]);
+
   // ─── Load connected accounts ─────────────────────────────────
   useEffect(() => {
     if (!workspace?.id) return;
@@ -1057,14 +1075,14 @@ export default function ComposePage() {
       .then(({ data }) => {
         const rows = (data ?? []) as SocialAccount[];
         setAccounts(rows);
-        
+
         // Only pre-select all if NOT in edit mode
         if (!editId) {
           setSelectedAccountIds(rows.map(a => a.id));
           const firstKnown = rows.find(a => PLATFORMS.some(p => p.id === a.platform));
           if (firstKnown) setPreviewPlatform(firstKnown.platform as PlatformId);
         }
-        
+
         setAccountsLoading(false);
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1729,63 +1747,107 @@ export default function ComposePage() {
         console.log(`[Auto-Split] Detected long story video (${duration}s). Created ${segmentsToSend.length} segments.`);
       }
 
-      const res = await fetch("/api/posts", {
-        method: scheduleMode === "draft" && draftId ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...(scheduleMode === "draft" && draftId ? { postId: draftId } : {}),
-          workspaceId: workspace?.id,
-          accountIds: selectedAccountIds,
-          content: isAllStoryMode ? "" : content,
-          channelContent: perChannelMode && Object.keys(channelContent).length > 0 ? channelContent : undefined,
-          accountContent: perChannelMode && Object.keys(accountContent).length > 0 ? accountContent : undefined,
-          scheduleMode,
-          scheduledAt: scheduledDate || undefined,
-          scheduledTime: scheduledTime || undefined,
-          timezone,
-          mediaUrls,
-          firstComment: activePanel === "comment" && firstComment.trim() ? firstComment.trim() : undefined,
-          platformFormats: Object.keys(platformFormats).length > 0 ? platformFormats : undefined,
-          youtubeTitle: youtubeSelected ? youtubeTitle.trim() || undefined : undefined,
-          youtubeConfig: youtubeSelected ? {
-            privacyStatus: ytPrivacy,
-            categoryId: ytCategory,
-            tags: ytTags.trim() ? ytTags.split(",").map(t => t.trim()).filter(Boolean) : undefined,
-            madeForKids: ytMadeForKids,
-          } : undefined,
-          thumbnail: thumbnailForPublish.type !== "none" ? {
-            type: thumbnailForPublish.type,
-            frameOffset: thumbnailForPublish.frameOffset,
-            uploadedUrl: thumbnailForPublish.uploadedUrl || undefined,
-          } : undefined,
-          segments: segmentsToSend,
-        }),
-      });
-
-      const json = await res.json() as { data: unknown; error?: string };
-
-      if (!res.ok) {
-        toast.error(json.error ?? "Failed to publish post");
+      // ── Check if posting to TikTok and show modal if needed ──
+      const hasTiktok = allSelectedPlatforms.includes("tiktok");
+      if (hasTiktok && !tiktokData && scheduleMode !== "draft") {
+        setPendingTiktokSubmit(true);
+        setIsTikTokModalOpen(true);
+        setIsSubmitting(false);
         return;
       }
 
-      if (scheduleMode === "draft") toast.success("Saved as draft");
-      else if (scheduleMode === "schedule") toast.success(`Scheduled for ${scheduledDate} at ${scheduledTime || "09:00"}`);
-      else toast.success(`Published to ${selectedAccountIds.length} account${selectedAccountIds.length > 1 ? "s" : ""}!`);
+      // Build the publish payload
+      const publishPayload: PublishPayload = {
+        workspaceId: workspace?.id,
+        accountIds: selectedAccountIds,
+        content: isAllStoryMode ? "" : content,
+        channelContent: perChannelMode && Object.keys(channelContent).length > 0 ? channelContent : undefined,
+        accountContent: perChannelMode && Object.keys(accountContent).length > 0 ? accountContent : undefined,
+        scheduleMode,
+        scheduledAt: scheduledDate || undefined,
+        scheduledTime: scheduledTime || undefined,
+        timezone,
+        mediaUrls,
+        firstComment: activePanel === "comment" && firstComment.trim() ? firstComment.trim() : undefined,
+        platformFormats: Object.keys(platformFormats).length > 0 ? platformFormats : undefined,
+        youtubeTitle: youtubeSelected ? youtubeTitle.trim() || undefined : undefined,
+        youtubeConfig: youtubeSelected ? {
+          privacyStatus: ytPrivacy,
+          categoryId: ytCategory,
+          tags: ytTags.trim() ? ytTags.split(",").map(t => t.trim()).filter(Boolean) : undefined,
+          madeForKids: ytMadeForKids,
+        } : undefined,
+        tiktokConfig: hasTiktok ? tiktokData : undefined,
+        thumbnail: thumbnailForPublish.type !== "none" ? {
+          type: thumbnailForPublish.type,
+          frameOffset: thumbnailForPublish.frameOffset,
+          uploadedUrl: thumbnailForPublish.uploadedUrl || undefined,
+        } : undefined,
+        segments: segmentsToSend,
+      };
+
+      // Execute publish with manager
+      const result = await publishManager.publish(publishPayload);
+
+      if (!result.success) {
+        return;
+      }
+
+      // Close TikTok modal if it was open
+      if (isTikTokModalOpen) {
+        setIsTikTokModalOpen(false);
+        setTiktokData(null);
+      }
+
+      // Reset pending TikTok submit flag
+      setPendingTiktokSubmit(false);
 
       // Cancel any pending auto-save
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
 
+      // Clean up media resources
       mediaFiles.forEach(f => URL.revokeObjectURL(f.blobUrl));
-      setContent(""); setChannelContent({}); setAccountContent({}); setMediaFiles([]); setActiveMediaId(null);
-      setFirstComment(""); setShowFirstComment(false); setActivePanel("none");
-      setYoutubeTitle(""); setTitleError(false); setPerChannelMode(false);
-      setYtPrivacy("public"); setYtCategory("22"); setYtTags(""); setYtMadeForKids(false); setThumbnail(EMPTY_THUMBNAIL);
-      setAiCaptions([]); setAiHashtagsByPlatform({}); setAiTopic(""); setAiKeywords("");
-      setDraftId(null); setAutoSaveStatus("idle"); lastSavedContent.current = "";
+
+      // Reset all form state
+      setContent("");
+      setChannelContent({});
+      setAccountContent({});
+      setMediaFiles([]);
+      setActiveMediaId(null);
+      setFirstComment("");
+      setShowFirstComment(false);
+      setActivePanel("none");
+      setYoutubeTitle("");
+      setTitleError(false);
+      setPerChannelMode(false);
+      setYtPrivacy("public");
+      setYtCategory("22");
+      setYtTags("");
+      setYtMadeForKids(false);
+      setThumbnail(EMPTY_THUMBNAIL);
+      setAiCaptions([]);
+      setAiHashtagsByPlatform({});
+      setAiTopic("");
+      setAiKeywords("");
+      setDraftId(null);
+      setAutoSaveStatus("idle");
+      lastSavedContent.current = "";
+      setTiktokData(null);
+
+      // Small delay before redirect for better UX
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Redirect to posts page to show the published/scheduled post
+      if (scheduleMode !== "draft") {
+        router.push("/posts");
+      }
     } catch (err) {
       console.error("[Publish error]", err);
-      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      // Error is already handled by publishManager with toast
+      // Just need to make sure modals are closed
+      if (isTikTokModalOpen) {
+        setIsTikTokModalOpen(false);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -3133,6 +3195,35 @@ export default function ComposePage() {
             </div>
           )}
 
+          {/* ── TikTok Settings ── */}
+          {allSelectedPlatforms.includes("tiktok") && (
+            <button
+              onClick={() => setIsTikTokModalOpen(true)}
+              className="w-full rounded-2xl border border-border/50 bg-card shadow-sm p-4 hover:bg-card/80 hover:border-primary/30 transition-all mb-4 text-left group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">📱</div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">TikTok Settings</p>
+                    <p className="text-xs text-muted-foreground">Configure privacy, interactions & commercial disclosure</p>
+                  </div>
+                </div>
+                <div className="text-muted-foreground group-hover:text-foreground transition-colors">→</div>
+              </div>
+              {tiktokData && (
+                <div className="mt-3 pt-3 border-t border-border/30 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-1 text-xs text-primary font-medium">
+                    ✓ Title: {tiktokData.title.slice(0, 20)}{tiktokData.title.length > 20 ? "..." : ""}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-1 text-xs text-primary font-medium">
+                    ✓ Privacy: {tiktokData.privacyStatus === "SELF_ONLY" ? "Private" : tiktokData.privacyStatus === "FRIEND_ONLY" ? "Friends" : "Public"}
+                  </span>
+                </div>
+              )}
+            </button>
+          )}
+
           {/* ── Schedule ── */}
           <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-4 mb-16 lg:mb-0">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">When to publish</p>
@@ -3333,15 +3424,50 @@ export default function ComposePage() {
     </>
   );
 
+  // Get TikTok account for modal - find any TikTok account (not just selected ones for modal purposes)
+  const tiktokAccount = accounts.find(a => a.platform === "tiktok");
+
   // Render modal or regular page - RETURN ONLY ONE
+  const pageContent = (
+    <>
+      {innerContent}
+
+      {/* TikTok Share Modal - shown when user tries to publish to TikTok */}
+      {tiktokAccount && (
+        <TikTokShareModal
+          isOpen={isTikTokModalOpen}
+          onClose={() => {
+            setIsTikTokModalOpen(false);
+            setPendingTiktokSubmit(false);
+            setTiktokData(null);
+            setIsSubmitting(false);
+          }}
+          onSubmit={async (data) => {
+            setTiktokData(data);
+            setIsTikTokModalOpen(false);
+            // Re-trigger the submit with TikTok data
+            await new Promise(r => setTimeout(r, 100));
+            setIsSubmitting(true);
+            await handleSubmit();
+          }}
+          accountId={tiktokAccount.outstand_account_id || tiktokAccount.id}
+          accessToken="" // Creator info fetch handles auth, modal doesn't need token
+          videoDurationSec={videoFile?.videoDuration || 0}
+          contentPreview={content}
+          isLoading={isSubmitting}
+        />
+      )}
+    </>
+  );
+
   if (isModal) {
-    return <ComposeModal>{innerContent}</ComposeModal>;
+    return <ComposeModal>{pageContent}</ComposeModal>;
   }
 
   return (
     <div className="min-h-screen bg-gray-50/50">
       <div className="px-3 py-4 sm:p-6 max-w-7xl mx-auto space-y-3 sm:space-y-4 md:space-y-6 page-enter">
-        {innerContent}
+        {pageContent}
       </div>
     </div>
   );

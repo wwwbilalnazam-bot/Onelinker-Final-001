@@ -301,7 +301,17 @@ export async function publishTikTokVideo(
   accessToken: string,
   videoBuffer: Buffer | ArrayBuffer,
   fileName: string,
-  description?: string
+  description?: string,
+  tiktokConfig?: {
+    title?: string;
+    privacyStatus?: "SELF_ONLY" | "FRIEND_ONLY" | "PUBLIC";
+    allowComment?: boolean;
+    allowDuet?: boolean;
+    allowStitch?: boolean;
+    isCommercialContent?: boolean;
+    yourBrand?: boolean;
+    brandedContent?: boolean;
+  }
 ): Promise<TikTokPostResult> {
   try {
     // Step 1: Query creator info to get privacy options
@@ -314,23 +324,30 @@ export async function publishTikTokVideo(
         max_duration: creatorInfo.max_video_post_duration_sec,
       }));
 
-      // For sandbox: use SELF_ONLY if available, otherwise use first available
-      const privacyLevel = creatorInfo.privacy_level_options.includes("SELF_ONLY")
-        ? "SELF_ONLY"
-        : creatorInfo.privacy_level_options[0] ?? "PUBLIC_TO_EVERYONE";
+      // Use provided privacy status or fall back to SELF_ONLY for unaudited apps
+      const privacyLevel = tiktokConfig?.privacyStatus || (
+        creatorInfo.privacy_level_options.includes("SELF_ONLY")
+          ? "SELF_ONLY"
+          : creatorInfo.privacy_level_options[0] ?? "PUBLIC_TO_EVERYONE"
+      );
 
       // Step 2: Initialize upload
+      const videoTitle = tiktokConfig?.title || description || "Video posted with Onelinker";
       console.log("[tiktok/posts] Initializing video upload...", {
         fileName,
         videoSize: videoBuffer.byteLength,
-        title: description ?? "Video posted with Onelinker",
+        title: videoTitle,
         privacyLevel,
+        allowComment: tiktokConfig?.allowComment ?? false,
+        allowDuet: tiktokConfig?.allowDuet ?? false,
+        allowStitch: tiktokConfig?.allowStitch ?? false,
+        isCommercialContent: tiktokConfig?.isCommercialContent ?? false,
       });
       const { publishId, uploadUrl } = await initializeVideoUpload(
         accessToken,
         videoBuffer,
         fileName,
-        description ?? `Video posted with Onelinker`,
+        videoTitle,
         privacyLevel
       );
 
