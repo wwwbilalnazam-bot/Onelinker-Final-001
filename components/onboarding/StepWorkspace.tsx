@@ -111,7 +111,7 @@ export function StepWorkspace({
 
   async function onSubmit(values: WorkspaceFormValues) {
     if (!workspaceId) {
-      toast.error("Workspace not found. Please refresh and try again.");
+      toast.error("Workspace initialization failed. Please refresh the page.");
       return;
     }
 
@@ -142,6 +142,7 @@ export function StepWorkspace({
 
       onComplete(values.name, logoUrl);
     } catch (err) {
+      console.error("[StepWorkspace] Error:", err);
       toast.error("Failed to save workspace. Please try again.");
     }
   }

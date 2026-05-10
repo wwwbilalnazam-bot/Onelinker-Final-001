@@ -140,8 +140,9 @@ export async function buildTikTokOAuthUrl(params: {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("code_challenge", codeChallenge);
   url.searchParams.set("code_challenge_method", "S256");
-  // Force login screen to appear - allows connecting different accounts
-  url.searchParams.set("opt_display", "popup");
+  // Force authorization screen to always appear (disables silent re-auth)
+  // This allows users to click "Switch account" on the TikTok consent page.
+  url.searchParams.set("disable_auto_auth", "1");
 
   console.log("[tiktok/oauth] Generated OAuth URL with scopes:", TIKTOK_SCOPES);
   console.log("[tiktok/oauth] Full URL:", url.toString().substring(0, 150) + "...");

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Check } from "lucide-react";
+import { Check, RotateCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { StepWorkspace } from "./StepWorkspace";
@@ -47,11 +47,26 @@ export function OnboardingFlow({
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState(workspaceId);
+  const [isReloading, setIsReloading] = useState(false);
   const [data, setData] = useState({
     workspaceName: workspaceName,
     workspaceLogoUrl: null as string | null,
     connectedAccountIds: [] as string[],
   });
+
+  // Refresh the page to retry workspace creation if ID is missing
+  const handleRetryWorkspaceCreation = useCallback(async () => {
+    setIsReloading(true);
+    try {
+      // Perform a hard refresh to retry the workspace creation
+      window.location.href = "/onboarding";
+    } catch (err) {
+      console.error("[OnboardingFlow] Retry failed:", err);
+      toast.error("Failed to retry. Please refresh the page manually.");
+      setIsReloading(false);
+    }
+  }, []);
 
   // ── Mark user as onboarded ─────────────────────────────
 
@@ -182,10 +197,50 @@ export function OnboardingFlow({
 
         {/* Step content */}
         <div className="animate-fade-in">
-          {currentStep === 1 && (
+          {!currentWorkspaceId && currentStep === 1 ? (
+            <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm p-8 text-center space-y-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 mx-auto">
+                <RotateCw className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-foreground">
+                  Setting up your workspace
+                </h2>
+                <p className="text-muted-foreground">
+                  We're preparing your workspace. If this takes too long, try refreshing.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 pt-2">
+                <button
+                  onClick={handleRetryWorkspaceCreation}
+                  disabled={isReloading}
+                  className="px-6 py-2.5 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  {isReloading ? (
+                    <>
+                      <RotateCw className="h-4 w-4 animate-spin" />
+                      Retrying...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCw className="h-4 w-4" />
+                      Retry
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={completeOnboarding}
+                  disabled={isCompleting}
+                  className="px-6 py-2.5 bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed text-foreground font-medium rounded-xl transition-all"
+                >
+                  Skip for now
+                </button>
+              </div>
+            </div>
+          ) : currentStep === 1 && (
             <StepWorkspace
               userId={userId}
-              workspaceId={workspaceId}
+              workspaceId={currentWorkspaceId}
               initialName={data.workspaceName}
               onComplete={(name, logoUrl) => {
                 updateData({ workspaceName: name, workspaceLogoUrl: logoUrl });
@@ -197,7 +252,7 @@ export function OnboardingFlow({
 
           {currentStep === 2 && (
             <StepConnectAccount
-              workspaceId={workspaceId}
+              workspaceId={currentWorkspaceId}
               onComplete={(accountIds) => {
                 updateData({ connectedAccountIds: accountIds });
                 goToNextStep();
@@ -209,7 +264,7 @@ export function OnboardingFlow({
 
           {currentStep === 3 && (
             <StepFirstPost
-              workspaceId={workspaceId}
+              workspaceId={currentWorkspaceId}
               userId={userId}
               connectedAccountIds={data.connectedAccountIds}
               onComplete={completeOnboarding}
