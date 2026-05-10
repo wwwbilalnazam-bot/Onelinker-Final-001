@@ -7,18 +7,16 @@ The Outstand.so API integration is **PARTIALLY IMPLEMENTED**. Only TikTok has fu
 
 ## Current Implementation Status
 
-### ✅ TikTok (FULLY IMPLEMENTED)
+### ❌ TikTok (SWITCHED TO OFFICIAL API)
 **Files:**
-- `lib/outstand/tiktok.ts` - TikTok-specific operations
-- `lib/providers/tiktok-hybrid.ts` - Hybrid provider that tries Outstand first, falls back to official API
+- `lib/platforms/tiktok.ts` - TikTok platform properties
+- `lib/providers/tiktok-direct.ts` - Direct provider using official TikTok Content Posting API
+- `lib/tiktok/posts.ts` - Implementation of official TikTok v2 API
 
-**Features:**
-- ✅ Publishing videos (immediate)
-- ✅ Scheduling videos (delayed publish)
-- ✅ Analytics retrieval (likes, comments, shares, views)
-- ✅ Fallback to official TikTok API if Outstand fails
-- ✅ OAuth handling (delegates to direct provider)
-- ✅ Account management (delegates to direct provider)
+**Status:**
+- ✅ Using Official TikTok Content Posting API (Direct)
+- ❌ Not using Outstand.so (Disabled)
+- ✅ Posting videos, analytics, and account management all use official API
 
 **How it works:**
 1. User posts to TikTok
@@ -70,7 +68,7 @@ The Outstand.so API integration is **PARTIALLY IMPLEMENTED**. Only TikTok has fu
   - `instagram` → `meta-direct`
   - `linkedin` → `linkedin-direct`
   - `youtube` → `youtube-direct`
-  - `tiktok` → `tiktok-hybrid` ✅
+  - `tiktok` → `tiktok-direct` ✅
 
 ---
 
@@ -313,7 +311,7 @@ TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET
 
 ## Summary
 
-- **TikTok**: ✅ Full support with Outstand hybrid provider
+- **TikTok**: ✅ Switched to Official TikTok Content Posting API (Direct)
 - **Facebook/Instagram/YouTube/LinkedIn**: ❌ Outstand support not yet implemented
 - **Infrastructure**: ✅ Base client and config complete and working
 - **Database**: ✅ Schema supports Outstand integration

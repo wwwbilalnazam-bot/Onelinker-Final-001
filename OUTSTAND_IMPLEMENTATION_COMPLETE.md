@@ -188,10 +188,10 @@ All platforms use the same base pattern:
   - Verify scheduled status
 - [ ] Analytics display correctly
 
-### TikTok (Regression)
-- [ ] Existing TikTok posts still work
-- [ ] Verify provider is still `tiktok-hybrid`
-- [ ] Fallback to official API works
+### TikTok (SWITCHED TO OFFICIAL API)
+- [ ] Verify provider is now `tiktok-direct`
+- [ ] Verify all posts use official TikTok Content Posting API v2
+- [ ] Confirmed: Outstand.so is no longer used for TikTok
 
 ### Build & Compilation
 - [x] `npm run build` succeeds (✅ verified)

@@ -25,7 +25,7 @@ import { YouTubeHybridProvider } from "./youtube-hybrid";
 import { LinkedInDirectProvider } from "./linkedin-direct";
 import { LinkedInHybridProvider } from "./linkedin-hybrid";
 import { TikTokDirectProvider } from "./tiktok-direct";
-import { TikTokHybridProvider } from "./tiktok-hybrid";
+
 import { TwitterDirectProvider } from "./twitter-direct";
 import { ThreadsDirectProvider } from "./threads-direct";
 import { BlueskyDirectProvider } from "./bluesky-direct";
@@ -42,7 +42,7 @@ const PROVIDERS: Record<string, SocialProvider> = {
   "linkedin-direct": new LinkedInDirectProvider(),
   "linkedin-hybrid": new LinkedInHybridProvider(),
   "tiktok-direct": new TikTokDirectProvider(),
-  "tiktok-hybrid": new TikTokHybridProvider(),
+
   "twitter-direct": new TwitterDirectProvider(),
   "threads-direct": new ThreadsDirectProvider(),
   "bluesky-direct": new BlueskyDirectProvider(),
@@ -59,7 +59,7 @@ const PLATFORM_PROVIDER_MAP: Record<string, string> = {
   facebook:         "meta-hybrid",
   linkedin:         "linkedin-hybrid",
   youtube:          "youtube-hybrid",
-  tiktok:           "tiktok-hybrid",
+  tiktok:           "tiktok-direct",
   twitter:          "twitter-direct",
   threads:          "threads-direct",
   bluesky:          "bluesky-direct",

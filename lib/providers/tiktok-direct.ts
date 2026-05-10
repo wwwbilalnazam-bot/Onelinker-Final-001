@@ -164,7 +164,7 @@ export class TikTokDirectProvider implements SocialProvider {
     }
   }
 
-  // ── Posting (stub — TikTok Content Posting API) ────────
+  // ── Posting (TikTok Content Posting API v2) ───────────
 
   async createPost(params: {
     payload: CreatePostPayload;
