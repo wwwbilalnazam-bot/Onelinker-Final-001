@@ -140,6 +140,10 @@ export async function buildTikTokOAuthUrl(params: {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("code_challenge", codeChallenge);
   url.searchParams.set("code_challenge_method", "S256");
+  // Force login/permission screen to always display, even if previously authorized
+  url.searchParams.set("opt_display", "popup");
+
+  console.log("[tiktok/oauth] Generated OAuth URL:", url.toString().substring(0, 100) + "...");
 
   return { url: url.toString(), codeVerifier };
 }
