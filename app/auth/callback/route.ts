@@ -53,21 +53,29 @@ export async function GET(request: NextRequest) {
       // Use service client to bypass RLS — the user client's RLS can block
       // profile reads, causing an infinite redirect to onboarding.
       const serviceClient = createServiceClient();
-      const { data: profile } = await serviceClient
+      const { data: profile, error: profileError } = await serviceClient
         .from("profiles")
-        .select("onboarded")
+        .select("onboarded, id")
         .eq("id", user.id)
         .single();
 
+      console.log("[callback] Profile check:", { userId: user.id, onboarded: profile?.onboarded, profileExists: !!profile, error: profileError?.message });
+
       // New user or not onboarded — redirect to onboarding
-      if (!profile?.onboarded && !next.startsWith("/onboarding")) {
+      if (!profile || !profile.onboarded) {
+        console.log("[callback] Redirecting to onboarding");
         return NextResponse.redirect(`${origin}/onboarding`);
       }
+
+      // User is onboarded — proceed to requested page or home
+      if (next.startsWith("/")) {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+      return NextResponse.redirect(`${origin}/home`);
     }
 
-    // Validate next URL — only allow same-origin paths
-    const redirectTo = next.startsWith("/") ? `${origin}${next}` : `${origin}/`;
-    return NextResponse.redirect(redirectTo);
+    // No user — redirect to login
+    return NextResponse.redirect(`${origin}/login`);
   }
 
   // ── No code — redirect to login ────────────────────────
