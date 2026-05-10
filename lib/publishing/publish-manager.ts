@@ -139,7 +139,22 @@ export class PublishManager {
       // Step 4: Make the API call
       let payloadStr: string;
       try {
-        payloadStr = JSON.stringify(payload);
+        // Log payload keys to debug serialization issues
+        console.log("[publishManager] Payload keys:", Object.keys(payload));
+
+        // Try to serialize each field to identify problematic ones
+        const payloadCopy: Record<string, any> = {};
+        for (const [key, value] of Object.entries(payload)) {
+          try {
+            JSON.stringify(value);
+            payloadCopy[key] = value;
+          } catch (fieldError) {
+            console.warn(`[publishManager] Field "${key}" is not serializable:`, fieldError);
+            // Skip non-serializable fields
+          }
+        }
+
+        payloadStr = JSON.stringify(payloadCopy);
       } catch (e) {
         console.error("[publishManager] Payload serialization error:", e);
         throw new Error("Failed to prepare post data for publishing. Please try again.");
