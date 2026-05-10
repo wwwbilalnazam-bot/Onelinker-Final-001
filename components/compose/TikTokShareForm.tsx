@@ -137,7 +137,8 @@ export function TikTokShareForm({
       // Save settings after successful submit
       saveTikTokSettings(formData);
     } catch (err) {
-      console.error("[TikTokShareForm] Submit error:", err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error("[TikTokShareForm] Submit error:", errMsg);
     }
   };
 

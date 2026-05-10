@@ -88,7 +88,22 @@ export class PublishManager {
       toast.dismiss(this.toastId);
       this.toastId = null;
     }
-    const fullMessage = error ? `${message}\n${error}` : message;
+    // Safely extract error message to avoid circular references
+    let errorStr = "";
+    if (error) {
+      try {
+        if (typeof error === "string") {
+          errorStr = error;
+        } else if (error instanceof Error) {
+          errorStr = error.message;
+        } else {
+          errorStr = String(error);
+        }
+      } catch {
+        errorStr = "Unknown error occurred";
+      }
+    }
+    const fullMessage = errorStr ? `${message}\n${errorStr}` : message;
     toast.error(fullMessage, {
       duration: 5000,
       position: "bottom-right",
@@ -122,13 +137,26 @@ export class PublishManager {
       await this.delay(800);
 
       // Step 4: Make the API call
+      let payloadStr: string;
+      try {
+        payloadStr = JSON.stringify(payload);
+      } catch (e) {
+        console.error("[publishManager] Payload serialization error:", e);
+        throw new Error("Failed to prepare post data for publishing. Please try again.");
+      }
+
       const response = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: payloadStr,
       });
 
-      const json = await response.json() as { data?: any; error?: string };
+      let json: { data?: any; error?: string };
+      try {
+        json = await response.json() as { data?: any; error?: string };
+      } catch (e) {
+        throw new Error(`Invalid response from server: ${response.status}`);
+      }
 
       if (!response.ok) {
         const errorMessage = json.error || "Failed to publish post";

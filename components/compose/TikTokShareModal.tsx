@@ -88,7 +88,9 @@ export function TikTokShareModal({
       await onSubmit(data);
       onClose();
     } catch (err) {
-      console.error("[TikTokShareModal] Submit error:", err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error("[TikTokShareModal] Submit error:", errMsg);
+      // Error toast is handled by the parent publishManager
     }
   };
 
