@@ -30,7 +30,16 @@ export function loadTikTokSettings(): Partial<TikTokShareData> {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved) as Partial<TikTokShareData>;
+
+        // Migration: Convert old privacy enum values to new ones
+        if (parsed.privacyStatus === "PUBLIC" as any) {
+          parsed.privacyStatus = "PUBLIC_TO_EVERYONE";
+        } else if (parsed.privacyStatus === "FRIEND_ONLY" as any) {
+          parsed.privacyStatus = "MUTUAL_FOLLOW_FRIENDS";
+        }
+
+        return parsed;
       }
     }
   } catch (err) {

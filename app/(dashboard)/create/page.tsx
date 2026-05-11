@@ -3434,28 +3434,33 @@ export default function ComposePage() {
       {innerContent}
 
       {/* TikTok Share Modal - shown when user tries to publish to TikTok */}
-      {tiktokAccount && (
-        <TikTokShareModal
-          isOpen={isTikTokModalOpen}
-          onClose={() => {
-            setIsTikTokModalOpen(false);
-            setPendingTiktokSubmit(false);
-            setTiktokData(null);
-            setIsSubmitting(false);
-          }}
-          onSubmit={async (data) => {
-            setTiktokData(data);
-            setIsTikTokModalOpen(false);
-            setIsSubmitting(true);
-            await handleSubmit(data);
-          }}
-          accountId={tiktokAccount.outstand_account_id || tiktokAccount.id}
-          accessToken="" // Creator info fetch handles auth, modal doesn't need token
-          videoDurationSec={videoFile?.videoDuration || 0}
-          contentPreview={content}
-          isLoading={isSubmitting}
-        />
-      )}
+      {tiktokAccount && (() => {
+        const tiktokFormat = getFormat("tiktok", platformFormats.tiktok);
+        const tiktokMediaType: 'photo' | 'video' = tiktokFormat.id === "post" ? "photo" : "video";
+        return (
+          <TikTokShareModal
+            isOpen={isTikTokModalOpen}
+            onClose={() => {
+              setIsTikTokModalOpen(false);
+              setPendingTiktokSubmit(false);
+              setTiktokData(null);
+              setIsSubmitting(false);
+            }}
+            onSubmit={async (data) => {
+              setTiktokData(data);
+              setIsTikTokModalOpen(false);
+              setIsSubmitting(true);
+              await handleSubmit(data);
+            }}
+            accountId={tiktokAccount.outstand_account_id || tiktokAccount.id}
+            accessToken="" // Creator info fetch handles auth, modal doesn't need token
+            videoDurationSec={videoFile?.videoDuration || 0}
+            contentPreview={content}
+            isLoading={isSubmitting}
+            mediaType={tiktokMediaType}
+          />
+        );
+      })()}
     </>
   );
 

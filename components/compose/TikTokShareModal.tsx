@@ -23,6 +23,7 @@ interface TikTokShareModalProps {
   videoDurationSec?: number;
   contentPreview?: string;
   isLoading?: boolean;
+  mediaType?: 'photo' | 'video'; // TikTok: photos don't support duet/stitch
 }
 
 export function TikTokShareModal({
@@ -34,6 +35,7 @@ export function TikTokShareModal({
   videoDurationSec = 0,
   contentPreview = "",
   isLoading = false,
+  mediaType = 'video',
 }: TikTokShareModalProps) {
   const [creatorInfo, setCreatorInfo] = useState<CreatorInfo | null>(null);
   const [isLoadingCreatorInfo, setIsLoadingCreatorInfo] = useState(false);
@@ -66,15 +68,8 @@ export function TikTokShareModal({
         const message = err instanceof Error ? err.message : "Failed to load creator information. Please try again.";
         setError(message);
         console.error("[TikTokShareModal] Error:", err);
-        // Use fallback on error so user can still proceed
-        setCreatorInfo({
-          nickname: "TikTok Creator",
-          username: "",
-          profilePicture: "",
-          canPost: true,
-          remainingPostsToday: 15,
-          maxVideoDurationSec: 600,
-        });
+        // Don't proceed with fallback - user must reconnect or retry
+        setCreatorInfo(null);
       } finally {
         setIsLoadingCreatorInfo(false);
       }
@@ -112,6 +107,14 @@ export function TikTokShareModal({
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
             <p className="text-sm text-muted-foreground">Loading TikTok settings...</p>
           </div>
+        ) : error && !creatorInfo ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-center">
+              <p className="text-sm font-medium text-red-700 mb-2">Unable to Load TikTok Settings</p>
+              <p className="text-xs text-red-600 mb-4">{error}</p>
+              <p className="text-xs text-muted-foreground">Please reconnect your TikTok account and try again.</p>
+            </div>
+          </div>
         ) : (
           <>
             {error && (
@@ -125,6 +128,7 @@ export function TikTokShareModal({
               isSubmitting={isLoading}
               videoDurationSec={videoDurationSec}
               contentPreview={contentPreview}
+              mediaType={mediaType}
             />
           </>
         )}

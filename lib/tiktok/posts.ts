@@ -119,7 +119,12 @@ export async function initializeVideoUpload(
   videoBuffer: Buffer | ArrayBuffer,
   fileName: string,
   title: string,
-  privacyLevel: "PUBLIC_TO_EVERYONE" | "MUTUAL_FOLLOW_FRIENDS" | "SELF_ONLY" = "PUBLIC_TO_EVERYONE"
+  privacyLevel: "PUBLIC_TO_EVERYONE" | "MUTUAL_FOLLOW_FRIENDS" | "SELF_ONLY" = "PUBLIC_TO_EVERYONE",
+  interactions?: {
+    allowComment?: boolean;
+    allowDuet?: boolean;
+    allowStitch?: boolean;
+  }
 ): Promise<{ publishId: string; uploadUrl: string }> {
   const videoSize = videoBuffer.byteLength;
 
@@ -138,9 +143,9 @@ export async function initializeVideoUpload(
     post_info: {
       title,
       privacy_level: privacyLevel,
-      disable_comment: false,
-      disable_duet: false,
-      disable_stitch: false,
+      disable_comment: !interactions?.allowComment,
+      disable_duet: !interactions?.allowDuet,
+      disable_stitch: !interactions?.allowStitch,
     },
     source_info: {
       source: "FILE_UPLOAD",
@@ -304,7 +309,7 @@ export async function publishTikTokVideo(
   description?: string,
   tiktokConfig?: {
     title?: string;
-    privacyStatus?: "SELF_ONLY" | "FRIEND_ONLY" | "PUBLIC";
+    privacyStatus?: "SELF_ONLY" | "MUTUAL_FOLLOW_FRIENDS" | "PUBLIC_TO_EVERYONE";
     allowComment?: boolean;
     allowDuet?: boolean;
     allowStitch?: boolean;
@@ -348,7 +353,12 @@ export async function publishTikTokVideo(
         videoBuffer,
         fileName,
         videoTitle,
-        privacyLevel
+        privacyLevel,
+        {
+          allowComment: tiktokConfig?.allowComment,
+          allowDuet: tiktokConfig?.allowDuet,
+          allowStitch: tiktokConfig?.allowStitch,
+        }
       );
 
       console.log(`[tiktok/posts] Got publish_id: ${publishId}, uploadUrl: ${uploadUrl.substring(0, 50)}...`);

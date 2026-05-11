@@ -31,24 +31,39 @@ export interface TikTokProfile {
   union_id?: string;
   display_name: string;
   avatar_url: string | null;
-  follower_count?: number;
+  avatar_large_url?: string | null;
   username?: string;
+  follower_count?: number;
+  video_count?: number;
+  heart_count?: number;
 }
 
 // ── TikTok OAuth scopes ─────────────────────────────────────
 // TikTok Login Kit scopes. Comma-separated in the auth URL.
-// user.info.basic: Required for basic profile info
-// video.publish: Required for posting videos
-// video.list: For reading user's video list
-
-// TikTok Login Kit scopes - start with minimal required scopes
-// user.info.basic: Required for basic profile info (open_id, display_name)
-// video.publish: Required for posting videos
-// user.info.profile: Optional - gets follower count, avatar (may fail if not authorized)
-// video.list: Optional - reading user's video list (may fail if not authorized)
+// See: https://developers.tiktok.com/doc/login-kit/scopes/
+//
+// Required for core functionality:
+//   user.info.basic - display name, open_id
+//   video.publish - post content to TikTok
+//
+// For full integration (analytics, comments, profile):
+//   user.info.profile - avatar, avatar_large, username
+//   user.info.stats - follower count, video count, heart count (engagement stats)
+//   video.list - read user's video list
+//   video.read - read video metadata (includes duration, creation time, etc.)
+//   video.insights - video analytics (views, likes, shares, comments)
+//   comment.read - read comments on user's videos
+//   comment.manage - create and manage comments on user's videos
 const TIKTOK_SCOPES = [
-  "user.info.basic",
-  "video.publish",
+  "user.info.basic",      // Display name, open_id
+  "user.info.profile",    // Avatar, username
+  "user.info.stats",      // Engagement stats (followers, videos, hearts)
+  "video.publish",        // Post videos to TikTok
+  "video.list",           // List user's videos
+  "video.read",           // Read video metadata
+  "video.insights",       // Video analytics
+  "comment.read",         // Read comments on videos
+  "comment.manage",       // Manage comments
 ].join(",");
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -170,7 +185,7 @@ export async function handleTikTokOAuthCode(
 
   // Fetch user profile using TikTok User Info endpoint
   // TikTok v2 requires fields parameter to specify which data to return
-  // Start with basic fields only - if that fails, it means scope issue
+  // Request all available fields from authorized scopes
   let profileRes = await tiktokGet<{
     data: {
       user: {
@@ -178,14 +193,20 @@ export async function handleTikTokOAuthCode(
         union_id?: string;
         display_name: string;
         avatar_url?: string;
+        avatar_large_url?: string;
         follower_count?: number;
+        video_count?: number;
+        heart_count?: number;
         username?: string;
       };
     };
     error: { code: string; message: string };
   }>("/user/info/", {
-    // Request only basic fields that are guaranteed by user.info.basic scope
-    fields: "open_id,display_name",
+    // Request all fields available from our scopes
+    // user.info.basic: open_id, display_name
+    // user.info.profile: avatar_url, avatar_large_url, username
+    // user.info.stats: follower_count, video_count, heart_count
+    fields: "open_id,display_name,avatar_url,avatar_large_url,username,follower_count,video_count,heart_count",
   }, tokenData.access_token);
 
   const user = profileRes.data?.user;
@@ -199,7 +220,10 @@ export async function handleTikTokOAuthCode(
       union_id: user.union_id,
       display_name: user.display_name ?? "TikTok User",
       avatar_url: user.avatar_url ?? null,
+      avatar_large_url: user.avatar_large_url ?? null,
       follower_count: user.follower_count ?? 0,
+      video_count: user.video_count ?? 0,
+      heart_count: user.heart_count ?? 0,
       username: user.username,
     },
     accessToken: tokenData.access_token,

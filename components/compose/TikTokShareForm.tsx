@@ -23,11 +23,12 @@ interface TikTokShareFormProps {
   isSubmitting?: boolean;
   videoDurationSec?: number;
   contentPreview?: string;
+  mediaType?: 'photo' | 'video'; // TikTok: photo posts don't support duet/stitch
 }
 
 export interface TikTokShareData {
   title: string;
-  privacyStatus: "" | "SELF_ONLY" | "FRIEND_ONLY" | "PUBLIC"; // Empty string = no default selected
+  privacyStatus: "" | "SELF_ONLY" | "MUTUAL_FOLLOW_FRIENDS" | "PUBLIC_TO_EVERYONE"; // Empty string = no default selected
   allowComment: boolean;
   allowDuet: boolean;
   allowStitch: boolean;
@@ -54,6 +55,7 @@ export function TikTokShareForm({
   isSubmitting = false,
   videoDurationSec = 0,
   contentPreview = "",
+  mediaType = 'video',
 }: TikTokShareFormProps) {
   const [formData, setFormData] = useState<TikTokShareData>(DEFAULT_DATA);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -110,9 +112,9 @@ export function TikTokShareForm({
       newErrors.commercial = "Select at least one option when commercial content is enabled";
     }
 
-    // Branded content can't be private
+    // Branded content can't be private (SELF_ONLY)
     if (formData.brandedContent && formData.privacyStatus === "SELF_ONLY") {
-      newErrors.privacy = "Branded content cannot be set to private. Please select 'Friend Only' or 'Public'.";
+      newErrors.privacy = "Branded content cannot be set to private. Please select 'Friends Only' or 'Public'.";
     }
 
     // Video duration validation
@@ -123,7 +125,7 @@ export function TikTokShareForm({
     }
 
     setErrors(newErrors);
-  }, [formData, videoDurationSec, creatorInfo]);
+  }, [formData, videoDurationSec, creatorInfo, mediaType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -389,8 +391,8 @@ export function TikTokShareForm({
                 >
                   <option value="">Select privacy status...</option>
                   <option value="SELF_ONLY">🔒 Private (Only Me)</option>
-                  <option value="FRIEND_ONLY">👥 Friends Only</option>
-                  <option value="PUBLIC">🌍 Public</option>
+                  <option value="MUTUAL_FOLLOW_FRIENDS">👥 Friends Only</option>
+                  <option value="PUBLIC_TO_EVERYONE">🌍 Public</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               </div>
@@ -448,7 +450,7 @@ export function TikTokShareForm({
         {expandedSections.interactions && (
           <div className="px-4 py-3 border-t border-border/30 space-y-3 bg-muted/20">
             <p className="text-xs text-muted-foreground mb-3">
-              Select which interactions creators can use with your video:
+              Select which interactions creators can use with your {mediaType === 'photo' ? 'photo' : 'video'}:
             </p>
 
             {/* Allow Comments */}
@@ -462,44 +464,50 @@ export function TikTokShareForm({
               />
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground">Allow Comments</p>
-                <p className="text-xs text-muted-foreground">Others can comment on your video</p>
+                <p className="text-xs text-muted-foreground">Others can comment on your {mediaType === 'photo' ? 'photo' : 'video'}</p>
               </div>
             </label>
 
-            {/* Allow Duets */}
-            <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-              <Checkbox
-                checked={formData.allowDuet}
-                onCheckedChange={checked =>
-                  setFormData(prev => ({ ...prev, allowDuet: checked as boolean }))
-                }
-                disabled={isSubmitting}
-              />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">Allow Duets</p>
-                <p className="text-xs text-muted-foreground">Others can create duets with your video</p>
-              </div>
-            </label>
+            {/* Allow Duets - ONLY for videos (not photos) */}
+            {mediaType !== 'photo' && (
+              <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                <Checkbox
+                  checked={formData.allowDuet}
+                  onCheckedChange={checked =>
+                    setFormData(prev => ({ ...prev, allowDuet: checked as boolean }))
+                  }
+                  disabled={isSubmitting}
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Allow Duets</p>
+                  <p className="text-xs text-muted-foreground">Others can create duets with your video</p>
+                </div>
+              </label>
+            )}
 
-            {/* Allow Stitches */}
-            <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
-              <Checkbox
-                checked={formData.allowStitch}
-                onCheckedChange={checked =>
-                  setFormData(prev => ({ ...prev, allowStitch: checked as boolean }))
-                }
-                disabled={isSubmitting}
-              />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">Allow Stitches</p>
-                <p className="text-xs text-muted-foreground">Others can stitch your video</p>
-              </div>
-            </label>
+            {/* Allow Stitches - ONLY for videos (not photos) */}
+            {mediaType !== 'photo' && (
+              <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors">
+                <Checkbox
+                  checked={formData.allowStitch}
+                  onCheckedChange={checked =>
+                    setFormData(prev => ({ ...prev, allowStitch: checked as boolean }))
+                  }
+                  disabled={isSubmitting}
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">Allow Stitches</p>
+                  <p className="text-xs text-muted-foreground">Others can stitch your video</p>
+                </div>
+              </label>
+            )}
 
             <div className="mt-3 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg flex items-start gap-2">
               <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-blue-700">
-                None of these options are selected by default. Uncheck all if you want to restrict interactions.
+                {mediaType === 'photo'
+                  ? 'Photo posts only support comments. Duets and Stitches are only available for video posts.'
+                  : 'None of these options are selected by default. Uncheck all if you want to restrict interactions.'}
               </p>
             </div>
           </div>
@@ -609,7 +617,7 @@ export function TikTokShareForm({
                   <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-amber-700">
-                      ⚠️ Branded content visibility cannot be set to private. Please select "Friends Only" or "Public".
+                      ⚠️ Branded content visibility cannot be set to private. Please select "Friends Only" (for followers) or "Public" (for everyone).
                     </p>
                   </div>
                 )}
