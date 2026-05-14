@@ -1071,9 +1071,16 @@ export default function ComposePage() {
       .select("id, workspace_id, outstand_account_id, platform, username, display_name, profile_picture, followers_count, is_active, connected_at")
       .eq("workspace_id", workspace.id)
       .eq("is_active", true)
-      .order("connected_at", { ascending: true })
-      .then(({ data }) => {
+      .order("connected_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[Create] Failed to load accounts:", error);
+          setAccountsLoading(false);
+          return;
+        }
+
         const rows = (data ?? []) as SocialAccount[];
+        console.log("[Create] Loaded accounts:", rows.length, rows.map(a => ({ platform: a.platform, username: a.username })));
         setAccounts(rows);
 
         // Only pre-select all if NOT in edit mode

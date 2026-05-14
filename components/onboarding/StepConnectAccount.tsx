@@ -128,43 +128,54 @@ export function StepConnectAccount({
     // Clear any existing poll
     if (pollingInterval) clearInterval(pollingInterval);
 
+    let pollCount = 0;
+    const maxPolls = 40; // 2 minutes with 3s intervals
+
     const interval = setInterval(async () => {
+      pollCount++;
       try {
         const res = await fetch(`/api/accounts?workspaceId=${workspaceId}`);
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.warn(`[Polling] Attempt ${pollCount}: API error ${res.status}`);
+          return;
+        }
 
         const { data } = await res.json() as { data: Array<{ platform: string; outstand_account_id: string; id: string; display_name?: string }> };
 
         // Debug: log all accounts and what we're looking for
-        console.log(`[Polling] Looking for platform="${platform}" among accounts:`, data?.map(a => ({ platform: a.platform, display_name: a.display_name })));
+        console.log(`[Polling] Attempt ${pollCount}/${maxPolls}: Looking for platform="${platform}" among ${data?.length ?? 0} accounts:`, data?.map(a => ({ platform: a.platform, display_name: a.display_name })));
 
-        const match = data?.find((a) => a.platform === platform);
+        // Check both exact match and multiple accounts (in case more were added)
+        const matches = data?.filter((a) => a.platform === platform) ?? [];
+        console.log(`[Polling] Found ${matches.length} matches for platform="${platform}"`);
 
-        if (match) {
+        if (matches.length > 0) {
           clearInterval(interval);
           setPollingInterval(null);
           setConnecting(null);
-          setConnected((prev) => [...new Set([...prev, platform])]);
-          setConnectedIds((prev) => [...new Set([...prev, match.id])]);
-          console.log(`[Polling] ✓ Found match:`, match);
-          toast.success(`${platform} connected successfully!`);
+
+          // Add all matching accounts
+          matches.forEach(match => {
+            setConnected((prev) => [...new Set([...prev, platform])]);
+            setConnectedIds((prev) => [...new Set([...prev, match.id])]);
+          });
+
+          console.log(`[Polling] ✓ Found ${matches.length} match(es):`, matches);
+          toast.success(`${platform} account${matches.length > 1 ? 's' : ''} connected successfully!`);
+        } else if (pollCount >= maxPolls) {
+          // Only error after maxPolls attempts
+          clearInterval(interval);
+          setPollingInterval(null);
+          setConnecting(null);
+          toast.error("Connection timed out. The account may have been saved — refresh to check.");
+          console.warn(`[Polling] Timeout after ${maxPolls} attempts`);
         }
       } catch (err) {
-        console.error(`[Polling] Error:`, err);
+        console.error(`[Polling] Attempt ${pollCount} error:`, err);
       }
     }, 3000);
 
     setPollingInterval(interval);
-
-    // Stop polling after 2 minutes
-    setTimeout(() => {
-      clearInterval(interval);
-      setPollingInterval(null);
-      if (connecting === platform) {
-        setConnecting(null);
-        toast.error("Connection timed out. Please try again.");
-      }
-    }, 120000);
   }
 
   useEffect(() => {

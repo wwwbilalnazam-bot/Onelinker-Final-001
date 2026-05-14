@@ -279,6 +279,7 @@ export async function syncMetaAccountsToSupabase(
             health_status: "healthy",
             encrypted_access_token: encryptedToken,
             token_expires_at: expiresAt,
+            connected_at: new Date().toISOString(),
             last_synced: new Date().toISOString(),
           },
           { onConflict: "workspace_id,outstand_account_id" }
@@ -341,6 +342,7 @@ export async function syncMetaAccountsToSupabase(
             health_status: "healthy",
             encrypted_access_token: encryptedPageToken, // IG API uses the page token
             token_expires_at: expiresAt,
+            connected_at: new Date().toISOString(),
             last_synced: new Date().toISOString(),
           },
           { onConflict: "workspace_id,outstand_account_id" }
