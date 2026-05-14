@@ -155,6 +155,7 @@ export async function handleMetaOAuthCode(
   }, longToken);
 
   const pages = pagesRes.data ?? [];
+  console.log(`[meta/accounts] Fetched ${pages.length} pages from Graph API:`, pages.map(p => ({ id: p.id, name: p.name, hasToken: !!p.access_token })));
 
   // For each page with an IG business account, fetch IG details
   const igAccounts: MetaIGAccount[] = [];
@@ -255,6 +256,8 @@ export async function syncMetaAccountsToSupabase(
       }
     }
   }
+
+  console.log(`[meta/accounts] Starting sync: syncFacebook=${syncFacebook}, syncInstagram=${syncInstagram}, totalPages=${oauthResult.pages.length}`);
 
   for (const page of oauthResult.pages) {
     if (!syncFacebook) continue;
