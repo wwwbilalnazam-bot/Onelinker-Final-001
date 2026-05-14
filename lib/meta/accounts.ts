@@ -257,10 +257,13 @@ export async function syncMetaAccountsToSupabase(
     }
   }
 
-  console.log(`[meta/accounts] Starting sync: syncFacebook=${syncFacebook}, syncInstagram=${syncInstagram}, totalPages=${oauthResult.pages.length}`);
+  console.log(`[meta/accounts] Starting sync: syncFacebook=${syncFacebook}, syncInstagram=${syncInstagram}, totalPages=${oauthResult.pages.length}, totalIGAccounts=${oauthResult.igAccounts.length}, targetPlatform=${targetPlatform}`);
 
   for (const page of oauthResult.pages) {
-    if (!syncFacebook) continue;
+    if (!syncFacebook) {
+      console.log(`[meta/accounts] Skipping Facebook page ${page.id} (targetPlatform=${targetPlatform})`);
+      continue;
+    }
     try {
       const accountId = `meta_fb_${page.id}`;
       const encryptedToken = TokenVault.encrypt(page.access_token);

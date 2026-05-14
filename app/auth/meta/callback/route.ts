@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
     const redirectUri = `${origin}/auth/meta/callback`;
 
     // Let the Meta provider handle token exchange + account sync
-    const provider = getProviderForPlatform(platform);
+    const provider = getProviderForPlatform(connectedPlatform);
     const result = await provider.handleCallback({
       queryParams: allParams,
       workspaceId,

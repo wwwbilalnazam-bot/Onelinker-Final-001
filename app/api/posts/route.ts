@@ -471,6 +471,25 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ data: null, error: error.message }, { status: 500 });
     }
 
+    // Regenerate thumbnail if media URLs changed
+    if (mediaUrls !== undefined && mediaUrls.length > 0) {
+      try {
+        const mediaUrl = mediaUrls[0];
+        const mediaType = mediaUrl.toLowerCase().includes(".mp4") ? "video" : "image";
+
+        console.log(`[api/posts] Regenerating thumbnail for draft post ${postId}`);
+        const thumbnailResult = await generateThumbnailFromMedia(mediaUrl, postId, workspaceId, mediaType);
+
+        if (thumbnailResult.success && thumbnailResult.thumbnailUrl) {
+          await updatePostThumbnail(postId, thumbnailResult.thumbnailUrl);
+          console.log(`[api/posts] ✓ Thumbnail regenerated for draft`);
+        }
+      } catch (thumbnailError) {
+        // Don't fail the update if thumbnail generation fails
+        console.warn(`[api/posts] Thumbnail regeneration failed (non-fatal):`, thumbnailError);
+      }
+    }
+
     return NextResponse.json({ data: { id: postId, status: "draft" } });
   } catch (err) {
     console.error("[api/posts] PATCH error:", err);
