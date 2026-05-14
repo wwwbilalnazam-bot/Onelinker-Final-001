@@ -188,15 +188,29 @@ export async function createFacebookPost(params: {
       console.log(`[facebook-video] Starting resumable upload for feed video`);
 
       // Step 1: Start
-      const startRes = await graphPost<{ upload_session_id: string; upload_url: string }>(
-        `/${pageId}/videos`,
-        { upload_phase: "start" },
-        pageAccessToken
-      );
+      console.log(`[facebook-video] Calling /${pageId}/videos with upload_phase=start`);
+      let startRes;
+      try {
+        startRes = await graphPost<any>(
+          `/${pageId}/videos`,
+          { upload_phase: "start" },
+          pageAccessToken
+        );
+      } catch (apiErr) {
+        console.error(`[facebook-video] API call failed:`, apiErr);
+        throw new Error(`Facebook video upload start API error: ${apiErr instanceof Error ? apiErr.message : String(apiErr)}`);
+      }
 
-      if (!startRes.upload_url || !startRes.upload_session_id) {
-        console.error(`[facebook-video] Invalid start response:`, startRes);
-        throw new Error(`Facebook video upload start failed: missing upload_url or upload_session_id`);
+      console.log(`[facebook-video] Start response:`, JSON.stringify(startRes));
+
+      if (!startRes?.upload_url || !startRes?.upload_session_id) {
+        console.error(`[facebook-video] Invalid start response - missing fields:`, {
+          has_upload_url: !!startRes?.upload_url,
+          has_upload_session_id: !!startRes?.upload_session_id,
+          response_keys: startRes ? Object.keys(startRes) : 'null',
+          full_response: startRes
+        });
+        throw new Error(`Facebook video upload start failed: missing upload_url or upload_session_id. Response: ${JSON.stringify(startRes)}`);
       }
 
       // Step 2: Upload
