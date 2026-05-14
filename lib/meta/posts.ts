@@ -186,14 +186,19 @@ export async function createFacebookPost(params: {
     try {
       const videoUrl = mediaUrls[0]!;
       console.log(`[facebook-video] Starting resumable upload for feed video`);
-      
+
       // Step 1: Start
       const startRes = await graphPost<{ upload_session_id: string; upload_url: string }>(
         `/${pageId}/videos`,
         { upload_phase: "start" },
         pageAccessToken
       );
-      
+
+      if (!startRes.upload_url || !startRes.upload_session_id) {
+        console.error(`[facebook-video] Invalid start response:`, startRes);
+        throw new Error(`Facebook video upload start failed: missing upload_url or upload_session_id`);
+      }
+
       // Step 2: Upload
       console.log(`[facebook-video] Uploading video binary`);
       const videoBlob = await fetch(videoUrl).then(r => r.blob());
