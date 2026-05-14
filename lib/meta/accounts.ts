@@ -147,15 +147,30 @@ export async function handleMetaOAuthCode(
     fields: "id,name",
   }, longToken);
 
-  // Fetch all Facebook Pages the user manages
-  const pagesRes = await graphGet<{
-    data: MetaPage[];
-  }>(`/${user.id}/accounts`, {
-    fields: "id,name,access_token,category,picture,username,followers_count,instagram_business_account",
-  }, longToken);
+  // Fetch all Facebook Pages the user manages (with pagination)
+  let pages: MetaPage[] = [];
+  let after: string | undefined;
+  let pagesFetched = 0;
 
-  const pages = pagesRes.data ?? [];
-  console.log(`[meta/accounts] Fetched ${pages.length} pages from Graph API:`, pages.map(p => ({ id: p.id, name: p.name, hasToken: !!p.access_token })));
+  do {
+    const pagesRes = await graphGet<{
+      data: MetaPage[];
+      paging?: { cursors?: { after?: string } };
+    }>(`/${user.id}/accounts`, {
+      fields: "id,name,access_token,category,picture,username,followers_count,instagram_business_account",
+      limit: 100,
+      ...(after ? { after } : {}),
+    }, longToken);
+
+    const batchPages = pagesRes.data ?? [];
+    pages = pages.concat(batchPages);
+    pagesFetched += batchPages.length;
+    after = pagesRes.paging?.cursors?.after;
+
+    console.log(`[meta/accounts] Fetched batch of ${batchPages.length} pages (total so far: ${pagesFetched})`);
+  } while (after);
+
+  console.log(`[meta/accounts] Fetched ${pages.length} total pages from Graph API:`, pages.map(p => ({ id: p.id, name: p.name, hasToken: !!p.access_token })));
 
   // For each page with an IG business account, fetch IG details
   const igAccounts: MetaIGAccount[] = [];
