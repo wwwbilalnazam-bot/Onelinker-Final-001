@@ -110,8 +110,8 @@ export async function GET(request: NextRequest) {
   const params = extractCallbackParams(request, "meta");
   if (params instanceof Response) return params;
 
-  const { workspaceId, platform, allParams } = params;
-  console.log(`${logPrefix} Workspace: ${workspaceId}, Platform: ${platform}`);
+  const { workspaceId, platform: connectedPlatform, allParams } = params;
+  console.log(`${logPrefix} Workspace: ${workspaceId}, Platform: ${connectedPlatform}`);
 
   try {
     // Verify the user is authenticated and has workspace access
@@ -132,10 +132,10 @@ export async function GET(request: NextRequest) {
     });
 
     console.log(`${logPrefix} Provider result:`, JSON.stringify(result));
-    console.log(`${logPrefix} Synced ${result.syncedCount} accounts for platform: ${platform}`);
+    console.log(`${logPrefix} Synced ${result.syncedCount} accounts for platform: ${connectedPlatform}`);
 
     // Clear deleted-account tracking so reconnected accounts aren't blocked
-    await clearDeletedTracking(workspaceId, platform);
+    await clearDeletedTracking(workspaceId, connectedPlatform);
 
     console.log(`${logPrefix} Callback complete - accounts should be visible now`);
     return popupClose();
