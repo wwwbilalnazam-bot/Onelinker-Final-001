@@ -110,8 +110,8 @@ export async function GET(request: NextRequest) {
   const params = extractCallbackParams(request, "meta");
   if (params instanceof Response) return params;
 
-  const { workspaceId, allParams } = params;
-  console.log(`${logPrefix} Workspace: ${workspaceId}`);
+  const { workspaceId, platform, allParams } = params;
+  console.log(`${logPrefix} Workspace: ${workspaceId}, Platform: ${platform}`);
 
   try {
     // Verify the user is authenticated and has workspace access
@@ -132,10 +132,12 @@ export async function GET(request: NextRequest) {
     });
 
     console.log(`${logPrefix} Provider result:`, JSON.stringify(result));
+    console.log(`${logPrefix} Synced ${result.syncedCount} accounts for platform: ${platform}`);
 
     // Clear deleted-account tracking so reconnected accounts aren't blocked
     await clearDeletedTracking(workspaceId, platform);
 
+    console.log(`${logPrefix} Callback complete - accounts should be visible now`);
     return popupClose();
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
