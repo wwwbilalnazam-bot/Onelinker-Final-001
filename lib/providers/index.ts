@@ -55,8 +55,8 @@ const PROVIDERS: Record<string, SocialProvider> = {
 // They'll show "coming soon" in the UI.
 
 const PLATFORM_PROVIDER_MAP: Record<string, string> = {
-  instagram:        "meta-hybrid",
-  facebook:         "meta-hybrid",
+  instagram:        "meta-direct",
+  facebook:         "meta-direct",
   linkedin:         "linkedin-hybrid",
   youtube:          "youtube-hybrid",
   tiktok:           "tiktok-direct",
