@@ -72,6 +72,16 @@ export async function graphGet<T>(
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as GraphErrorBody;
     const err = body.error;
+
+    // Detect rate limiting
+    const isRateLimit = err?.code === 17 || res.status === 429;
+    if (isRateLimit) {
+      const retryAfter = res.headers.get("x-business-use-case-usage") || "unknown";
+      console.error(
+        `[GraphAPI] 🚨 RATE LIMITED on ${path} — retry after ${retryAfter}`
+      );
+    }
+
     throw new MetaApiError(
       err?.message ?? `Graph API error: ${res.status}`,
       res.status,
@@ -105,6 +115,16 @@ export async function graphPost<T>(
   if (!res.ok) {
     const errBody = (await res.json().catch(() => ({}))) as GraphErrorBody;
     const err = errBody.error;
+
+    // Detect rate limiting
+    const isRateLimit = err?.code === 17 || res.status === 429;
+    if (isRateLimit) {
+      const retryAfter = res.headers.get("x-business-use-case-usage") || "unknown";
+      console.error(
+        `[GraphAPI] 🚨 RATE LIMITED on ${path} — retry after ${retryAfter}`
+      );
+    }
+
     throw new MetaApiError(
       err?.message ?? `Graph API error: ${res.status}`,
       res.status,

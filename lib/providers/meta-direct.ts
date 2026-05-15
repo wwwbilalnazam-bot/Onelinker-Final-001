@@ -82,11 +82,14 @@ export class MetaDirectProvider implements SocialProvider {
       redirectUri = `${appUrl}/auth/meta/callback`;
     }
 
-    // Exchange code for tokens and fetch pages/IG accounts
-    const oauthResult = await handleMetaOAuthCode(code, redirectUri);
-
     // Only sync the platform the user clicked on (facebook OR instagram, not both)
     const targetPlatform = queryParams.platform; // "facebook" or "instagram"
+
+    // Exchange code for tokens and fetch pages/IG accounts
+    // Pass targetPlatform so only relevant accounts are returned
+    const oauthResult = await handleMetaOAuthCode(code, redirectUri, targetPlatform);
+
+    // Sync filtered accounts to Supabase
     const syncResult = await syncMetaAccountsToSupabase(workspaceId, oauthResult, targetPlatform);
 
     const totalAccounts = targetPlatform === "instagram"
@@ -107,12 +110,24 @@ export class MetaDirectProvider implements SocialProvider {
   }): Promise<ProviderAccount[]> {
     const serviceClient = createServiceClient();
 
-    const { data: accounts } = await serviceClient
+    console.log(`[meta-direct] Listing accounts for workspace: ${params.workspaceId}`);
+
+    const { data: accounts, error } = await serviceClient
       .from("social_accounts")
       .select("outstand_account_id, platform, username, display_name, profile_picture, is_active")
       .eq("workspace_id", params.workspaceId)
       .in("platform", ["facebook", "instagram"])
       .like("outstand_account_id", "meta_%"); // only meta-direct accounts
+
+    if (error) {
+      console.error(`[meta-direct] Error querying accounts:`, error);
+      return [];
+    }
+
+    console.log(`[meta-direct] Found ${accounts?.length ?? 0} Meta accounts for workspace ${params.workspaceId}:`);
+    accounts?.forEach(a => {
+      console.log(`  • ${a.platform.toUpperCase()}: ${a.display_name} (@${a.username}) - Active: ${a.is_active}`);
+    });
 
     return (accounts ?? []).map((a) => ({
       providerAccountId: a.outstand_account_id,

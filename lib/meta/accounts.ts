@@ -134,7 +134,8 @@ export interface MetaOAuthResult {
 
 export async function handleMetaOAuthCode(
   code: string,
-  redirectUri: string
+  redirectUri: string,
+  targetPlatform?: string
 ): Promise<MetaOAuthResult> {
   // Exchange code for short-lived token
   const { accessToken: shortToken } = await exchangeCodeForToken(code, redirectUri);
@@ -147,60 +148,41 @@ export async function handleMetaOAuthCode(
     fields: "id,name",
   }, longToken);
 
-  // Fetch all Facebook Pages the user manages (with pagination)
-  let pages: MetaPage[] = [];
-  let after: string | undefined;
-  let pagesFetched = 0;
+  // Use enhanced sync with retry logic, diagnostics, and validation
+  const { performEnhancedSync } = await import("./account-sync-enhanced");
+  const syncResult = await performEnhancedSync(user.id, longToken);
 
-  do {
-    const pagesRes = await graphGet<{
-      data: MetaPage[];
-      paging?: { cursors?: { after?: string } };
-    }>(`/${user.id}/accounts`, {
-      fields: "id,name,access_token,category,picture,username,followers_count,instagram_business_account",
-      limit: 100,
-      ...(after ? { after } : {}),
-    }, longToken);
+  // Log the comprehensive diagnostic report
+  console.log(syncResult.diagnostics);
 
-    const batchPages = pagesRes.data ?? [];
-    pages = pages.concat(batchPages);
-    pagesFetched += batchPages.length;
-    after = pagesRes.paging?.cursors?.after;
-
-    console.log(`[meta/accounts] Fetched batch of ${batchPages.length} pages (total so far: ${pagesFetched})`);
-  } while (after);
-
-  console.log(`[meta/accounts] Fetched ${pages.length} total pages from Graph API:`, pages.map(p => ({ id: p.id, name: p.name, hasToken: !!p.access_token })));
-
-  // For each page with an IG business account, fetch IG details
-  const igAccounts: MetaIGAccount[] = [];
-
-  for (const page of pages) {
-    if (page.instagram_business_account?.id) {
-      try {
-        const ig = await graphGet<{
-          id: string;
-          name: string;
-          username: string;
-          profile_picture_url: string;
-          followers_count: number;
-        }>(`/${page.instagram_business_account.id}`, {
-          fields: "id,name,username,profile_picture_url,followers_count",
-        }, page.access_token);
-
-        igAccounts.push({
-          id: ig.id,
-          name: ig.name,
-          username: ig.username,
-          profile_picture_url: ig.profile_picture_url ?? null,
-          followers_count: ig.followers_count ?? 0,
-          pageId: page.id,
-          pageAccessToken: page.access_token,
-        });
-      } catch (err) {
-        console.error(`[meta/accounts] Failed to fetch IG account for page ${page.id}:`, err);
-      }
+  // Log any detected issues for debugging
+  if (syncResult.issues.hasErrors) {
+    console.warn("[meta/accounts] Issues detected during account discovery:");
+    syncResult.issues.issues.forEach(issue => {
+      console.warn(`  ⚠️ ${issue}`);
+    });
+    if (syncResult.issues.recommendations.length > 0) {
+      console.warn("[meta/accounts] Recommendations:");
+      syncResult.issues.recommendations.forEach(rec => {
+        console.warn(`  → ${rec}`);
+      });
     }
+  } else {
+    console.log("[meta/accounts] ✅ No issues detected during sync");
+  }
+
+  // Filter results based on which platform user is connecting
+  let pages = syncResult.pages;
+  let igAccounts = syncResult.igAccounts;
+
+  if (targetPlatform === "facebook") {
+    // User is connecting Facebook — show only Facebook pages, no IG accounts
+    igAccounts = [];
+    console.log(`[meta/accounts] Filtering for Facebook: showing ${pages.length} pages, 0 IG accounts`);
+  } else if (targetPlatform === "instagram") {
+    // User is connecting Instagram — show only IG accounts, no Facebook pages
+    pages = [];
+    console.log(`[meta/accounts] Filtering for Instagram: showing 0 pages, ${igAccounts.length} IG accounts`);
   }
 
   return {
@@ -274,6 +256,23 @@ export async function syncMetaAccountsToSupabase(
 
   console.log(`[meta/accounts] Starting sync: syncFacebook=${syncFacebook}, syncInstagram=${syncInstagram}, totalPages=${oauthResult.pages.length}, totalIGAccounts=${oauthResult.igAccounts.length}, targetPlatform=${targetPlatform}`);
 
+  // Log diagnostic information about pages
+  if (oauthResult.pages.length === 0) {
+    console.warn(
+      `[meta/accounts] ⚠️ WARNING: User has ZERO Facebook pages. ` +
+      `This is unusual. Check if user is admin of any pages.`
+    );
+  }
+
+  const pagesWithoutToken = oauthResult.pages.filter(p => !p.access_token);
+  if (pagesWithoutToken.length > 0) {
+    console.warn(
+      `[meta/accounts] ⚠️ WARNING: ${pagesWithoutToken.length} page(s) have no access_token. ` +
+      `User might be Viewer/Analyst only, not Admin/Editor/Moderator. ` +
+      `Pages: ${pagesWithoutToken.map(p => `"${p.name}"(${p.id})`).join(", ")}`
+    );
+  }
+
   for (const page of oauthResult.pages) {
     if (!syncFacebook) {
       console.log(`[meta/accounts] Skipping Facebook page ${page.id} (targetPlatform=${targetPlatform})`);
@@ -284,8 +283,10 @@ export async function syncMetaAccountsToSupabase(
       const encryptedToken = TokenVault.encrypt(page.access_token);
       const expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(); // ~60 days
 
+      console.log(`[meta/accounts] Syncing FB page: ${accountId} (${page.name}) to workspace ${workspaceId}`);
+
       // Upsert social account WITH encrypted token
-      const { error } = await serviceClient
+      const { error, data } = await serviceClient
         .from("social_accounts")
         .upsert(
           {
@@ -307,14 +308,24 @@ export async function syncMetaAccountsToSupabase(
         );
 
       if (error) {
-        console.error("[meta/accounts] Upsert FB page failed:", error);
+        console.error(`[meta/accounts] ❌ Upsert FB page failed for ${accountId}:`, {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
         errors++;
         continue;
       }
 
+      console.log(`[meta/accounts] ✓ FB page upserted to social_accounts: ${accountId}`, {
+        displayName: page.name,
+        platform: "facebook",
+      });
+
       // Also store in meta_tokens for legacy compatibility
       const encryptedMetaToken = TokenVault.encrypt(page.access_token);
-      await serviceClient
+      const { error: tokenError } = await serviceClient
         .from("meta_tokens")
         .upsert(
           {
@@ -331,10 +342,16 @@ export async function syncMetaAccountsToSupabase(
           { onConflict: "workspace_id,account_id" }
         );
 
-      console.log(`[meta/accounts] Successfully synced Facebook page: ${accountId}`);
+      if (tokenError) {
+        console.warn(`[meta/accounts] ⚠️ Failed to store token backup for ${accountId}:`, tokenError.message);
+      } else {
+        console.log(`[meta/accounts] ✓ Token stored in meta_tokens: ${accountId}`);
+      }
+
+      console.log(`[meta/accounts] ✅ Successfully synced Facebook page: ${accountId} (${page.name})`);
       synced++;
     } catch (err) {
-      console.error("[meta/accounts] FB page sync error:", err);
+      console.error(`[meta/accounts] ❌ Exception while syncing FB page ${page.id}:`, err);
       errors++;
     }
   }
@@ -347,8 +364,10 @@ export async function syncMetaAccountsToSupabase(
       const encryptedPageToken = TokenVault.encrypt(ig.pageAccessToken);
       const expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
 
+      console.log(`[meta/accounts] Syncing IG account: ${accountId} (@${ig.username}) to workspace ${workspaceId}`);
+
       // Upsert social account WITH encrypted token
-      const { error } = await serviceClient
+      const { error, data } = await serviceClient
         .from("social_accounts")
         .upsert(
           {
@@ -370,14 +389,25 @@ export async function syncMetaAccountsToSupabase(
         );
 
       if (error) {
-        console.error("[meta/accounts] Upsert IG account failed:", error);
+        console.error(`[meta/accounts] ❌ Upsert IG account failed for ${accountId}:`, {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
         errors++;
         continue;
       }
 
+      console.log(`[meta/accounts] ✓ IG account upserted to social_accounts: ${accountId}`, {
+        username: ig.username,
+        displayName: ig.name,
+        platform: "instagram",
+      });
+
       // Also store in meta_tokens for legacy compatibility
       const encryptedMetaToken = TokenVault.encrypt(ig.pageAccessToken);
-      await serviceClient
+      const { error: tokenError } = await serviceClient
         .from("meta_tokens")
         .upsert(
           {
@@ -395,12 +425,33 @@ export async function syncMetaAccountsToSupabase(
           { onConflict: "workspace_id,account_id" }
         );
 
-      console.log(`[meta/accounts] Successfully synced Instagram account: ${accountId}`);
+      if (tokenError) {
+        console.warn(`[meta/accounts] ⚠️ Failed to store token backup for ${accountId}:`, tokenError.message);
+      } else {
+        console.log(`[meta/accounts] ✓ Token stored in meta_tokens: ${accountId}`);
+      }
+
+      console.log(`[meta/accounts] ✅ Successfully synced Instagram account: ${accountId} (@${ig.username})`);
       synced++;
     } catch (err) {
-      console.error("[meta/accounts] IG account sync error:", err);
+      console.error(`[meta/accounts] ❌ Exception while syncing IG account for ${ig.id}:`, err);
       errors++;
     }
+  }
+
+  // ── Verification: Check what was actually stored ─────────────
+  if (synced > 0) {
+    const { data: storedAccounts } = await serviceClient
+      .from("social_accounts")
+      .select("outstand_account_id, platform, display_name, is_active")
+      .eq("workspace_id", workspaceId)
+      .in("platform", ["facebook", "instagram"])
+      .like("outstand_account_id", "meta_%");
+
+    console.log(`[meta/accounts] ✓ Verification: ${storedAccounts?.length ?? 0} Meta accounts now in database for workspace ${workspaceId}`);
+    storedAccounts?.forEach(a => {
+      console.log(`  • ${a.platform.toUpperCase()}: ${a.display_name} (${a.outstand_account_id}) - Active: ${a.is_active}`);
+    });
   }
 
   return { synced, errors };
