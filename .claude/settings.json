@@ -3,7 +3,9 @@
     "allow": [
       "Read(//c/Users/HP/Desktop/Onelinker Sceduling Tool/**)",
       "Bash(grep -v \"^$\")",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

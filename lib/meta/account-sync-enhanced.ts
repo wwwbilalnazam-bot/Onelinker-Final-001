@@ -148,10 +148,18 @@ export async function fetchInstagramAccountDetails(
   accessToken: string
 ): Promise<MetaIGAccount | null> {
   if (!page.instagram_business_account?.id) {
+    console.log(
+      `[fetchIGDetails] Page "${page.name}" (${page.id}) has NO linked Instagram account`
+    );
     return null; // Page has no linked IG account
   }
 
   try {
+    console.log(
+      `[fetchIGDetails] Fetching IG account ${page.instagram_business_account.id} ` +
+      `from page "${page.name}" (${page.id})`
+    );
+
     const ig = await graphGet<{
       id: string;
       name: string;
@@ -161,6 +169,11 @@ export async function fetchInstagramAccountDetails(
     }>(`/${page.instagram_business_account.id}`, {
       fields: "id,name,username,profile_picture_url,followers_count",
     }, accessToken);
+
+    console.log(
+      `[fetchIGDetails] ✅ Successfully fetched IG account: @${ig.username} ` +
+      `(${ig.name}) from page "${page.name}"`
+    );
 
     logIgFetchAttempt(page, true);
 
@@ -174,8 +187,39 @@ export async function fetchInstagramAccountDetails(
       pageAccessToken: accessToken,
     };
   } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorCode = (err as any)?.code;
+    const errorType = (err as any)?.type;
+
+    console.error(
+      `[fetchIGDetails] ❌ FAILED to fetch IG account ${page.instagram_business_account?.id} ` +
+      `from page "${page.name}" (${page.id}):`,
+      {
+        error: errorMsg,
+        code: errorCode,
+        type: errorType,
+      }
+    );
+
+    // Provide helpful context
+    if (errorCode === 100) {
+      console.error(
+        `  → Possible cause: IG account is PERSONAL (not Business/Creator) ` +
+        `or not properly linked to this page`
+      );
+    } else if (errorCode === 200) {
+      console.error(
+        `  → Possible cause: Insufficient permissions on this page ` +
+        `(user might not be admin/editor)`
+      );
+    } else if (errorCode === 190) {
+      console.error(
+        `  → Possible cause: Page access token expired`
+      );
+    }
+
     logIgFetchAttempt(page, false, err instanceof Error ? err : new Error(String(err)));
-    return null; // Silently skip this IG account, but continue with others
+    return null; // Skip this IG account, but continue with others
   }
 }
 
